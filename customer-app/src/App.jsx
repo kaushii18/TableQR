@@ -264,7 +264,7 @@ export default function App() {
       </header>
 
       {showLanding && (
-        <main className="landing-page">
+        <>
           <PerspectiveCinematic
             onEnterMenu={openMenu}
             tableNumber={tableNumber}
@@ -273,6 +273,8 @@ export default function App() {
               setTableModalOpen(true)
             }}
           />
+
+          <main className="landing-page">
 
           <button
             className="table-entry-pill"
@@ -347,7 +349,7 @@ export default function App() {
             <span className="banner-spark banner-spark-two" aria-hidden="true">✧</span>
           </section>
         </main>
-      )}
+      </>)}
 
       {/* Search & Dietary Preference Filter (Fast, uncluttered) */}
       {!showLanding && <>

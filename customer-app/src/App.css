@@ -1669,7 +1669,11 @@
   padding: 38px clamp(22px, 5vw, 58px);
   border: 1px solid rgba(225, 190, 119, 0.24);
   border-radius: 22px;
-  background: radial-gradient(ellipse at 80% 130%, rgba(198, 143, 63, 0.2), transparent 53%), linear-gradient(110deg, #211d16, #171613 65%);
+  background:
+    linear-gradient(110deg, rgba(23, 22, 19, 0.9), rgba(23, 22, 19, 0.78) 65%),
+    url('https://lh3.googleusercontent.com/grass-cs/AABkmLe-nHGZ5CVn6lRnxlWy7ZIxEGS8AcdYa7SwJ26SB97DI3Zvavpgw8FAIglIdQeKjS_hN77st2m-Lvkpsi6gY9LxLQ4p4TGJyYFb1b0UuvjUAAbrpf1DNlzoJv_Zb3yfQNHa9JM=w1920-h1080-k-no');
+  background-size: cover;
+  background-position: center;
   box-shadow: 0 22px 55px rgba(0, 0, 0, 0.23), inset 0 1px rgba(255, 255, 255, 0.055);
 }
 

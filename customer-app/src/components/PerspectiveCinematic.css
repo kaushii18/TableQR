@@ -5,14 +5,24 @@
 
 .cinematic-section {
   position: relative;
+  width: 100%;
+  min-height: 85vh;
   overflow: hidden;
-  padding: 40px 16px 36px 16px;
+  padding: 56px 16px 52px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   text-align: center;
-  background: radial-gradient(circle at 50% 10%, #171510 0%, #0d0c0a 75%, #080807 100%);
-  border-bottom: 1px solid rgba(214, 173, 97, 0.2);
+  /* Authentic High-Resolution Star Planet Restaurant Photo with Luxury Vignette */
+  background-color: #0d0c0a;
+  background-image:
+    linear-gradient(180deg, rgba(10, 9, 7, 0.65) 0%, rgba(10, 9, 7, 0.78) 55%, #0d0c0a 100%),
+    url('https://lh3.googleusercontent.com/grass-cs/AABkmLe-nHGZ5CVn6lRnxlWy7ZIxEGS8AcdYa7SwJ26SB97DI3Zvavpgw8FAIglIdQeKjS_hN77st2m-Lvkpsi6gY9LxLQ4p4TGJyYFb1b0UuvjUAAbrpf1DNlzoJv_Zb3yfQNHa9JM=w1920-h1080-k-no');
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  border-bottom: 1px solid rgba(214, 173, 97, 0.25);
 }
 
 /* --------------------------------------------------------------------------
