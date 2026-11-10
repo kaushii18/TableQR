@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from 'react'
 import { categories, categoryMeta, menuItems } from './data/menuData'
 import { createOrder, createServiceRequest } from './lib/supabase'
+import StarPortalButton from './components/StarPortalButton'
+import PerspectiveCinematic from './components/PerspectiveCinematic'
 import './App.css'
 
 const categoryCounts = {
@@ -24,6 +26,7 @@ export default function App() {
   // Table detection from URL ?table=...
   const urlTable = new URLSearchParams(window.location.search).get('table') || ''
   const [tableNumber, setTableNumber] = useState(urlTable)
+  const [showLanding, setShowLanding] = useState(true)
   const [tableModalOpen, setTableModalOpen] = useState(false)
   const [tempTableInput, setTempTableInput] = useState('')
 
@@ -82,6 +85,15 @@ export default function App() {
         .filter(section => section.items.length > 0),
     [filteredMenu],
   )
+  const featuredItems = useMemo(
+    () => menuItems.filter(item => item.isChefSpecial).slice(0, 4),
+    [],
+  )
+
+  function openMenu() {
+    setShowLanding(false)
+    window.scrollTo({ top: 0, behavior: 'auto' })
+  }
 
   // Auto-highlight active category on scroll
   useEffect(() => {
@@ -218,7 +230,7 @@ export default function App() {
             title="Set table number"
           >
             <span className="table-icon">🪑</span>
-            <span className="table-txt">{tableNumber ? `Table ${tableNumber}` : 'Set Table'}</span>
+            <span className="table-txt">{tableNumber ? `Table ${tableNumber}` : 'Table #'}</span>
           </button>
 
           {/* Call Waiter */}
@@ -228,6 +240,15 @@ export default function App() {
             title="Call Captain / Service"
           >
             🔔 <span className="btn-label">Waiter</span>
+          </button>
+
+          {/* Toggle Showcase / Menu */}
+          <button
+            className={`action-icon-btn ${showLanding ? 'active-gold' : ''}`}
+            onClick={() => setShowLanding(!showLanding)}
+            title={showLanding ? 'Go to full menu' : 'Open 3D perspective showcase'}
+          >
+            {showLanding ? '📋 Menu' : '✨ 3D View'}
           </button>
 
           {/* Cart Icon */}
@@ -242,7 +263,94 @@ export default function App() {
         </div>
       </header>
 
+      {showLanding && (
+        <main className="landing-page">
+          <PerspectiveCinematic
+            onEnterMenu={openMenu}
+            tableNumber={tableNumber}
+            onOpenTableModal={() => {
+              setTempTableInput(tableNumber)
+              setTableModalOpen(true)
+            }}
+          />
+
+          <button
+            className="table-entry-pill"
+            onClick={() => {
+              setTempTableInput(tableNumber)
+              setTableModalOpen(true)
+            }}
+          >
+            <span className="table-entry-icon">⌑</span>
+            <span><strong>Seated at a table?</strong><small>Enter your table number to order instantly.</small></span>
+            <span className="table-entry-arrow" aria-hidden="true">→</span>
+          </button>
+
+          <section className="signature-section">
+            <div className="section-heading">
+              <div>
+                <span className="eyebrow">FROM OUR KITCHEN, WITH LOVE</span>
+                <h2>Signature <em>flavors</em></h2>
+              </div>
+              <button className="text-link" onClick={openMenu}>View full menu <span aria-hidden="true">↗</span></button>
+            </div>
+            <div className="signature-grid">
+              {featuredItems.map((item, index) => (
+                <article className={`signature-card signature-card-${index + 1}`} key={item.id}>
+                  <div className="signature-art" aria-hidden="true">
+                    <span>{['🍗', '🍢', '🍖', '🍛'][index % 4]}</span>
+                    <i className="signature-spark">✦</i>
+                    <i className="signature-spark signature-spark-two">✦</i>
+                  </div>
+                  <div className="signature-info">
+                    <div className="signature-name-line">
+                      <span className={`fssai-dot ${item.type === 'Veg' ? 'veg' : item.type === 'Egg' ? 'egg' : 'nonveg'}`} title={item.type} />
+                      <h3>{item.name}</h3>
+                    </div>
+                    <div className="signature-bottom">
+                      <strong>₹{item.price}</strong>
+                      <StarPortalButton
+                        className="signature-add-btn"
+                        size="compact"
+                        endIcon="+"
+                        aria-label={`Add ${item.name} to order`}
+                        onClick={() => addToCart(item)}
+                      >Add</StarPortalButton>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="dining-perks" aria-label="Dining perks">
+            <div><span>↯</span><p>Direct-to-kitchen<br /><strong>ordering</strong></p></div>
+            <div><span>♨</span><p><strong>380+ fresh</strong><br />dishes to discover</p></div>
+            <div><span>◉</span><p>Full family<br /><strong>bar</strong></p></div>
+          </section>
+
+          <section className="menu-banner">
+            <div className="menu-banner-copy">
+              <span className="eyebrow">YOUR TABLE IS WAITING</span>
+              <h2>Something delicious<br />is just a tap away.</h2>
+              <p>Browse the complete menu and send your favourites straight to our kitchen.</p>
+            </div>
+            <StarPortalButton
+              className="menu-banner-cta"
+              size="regular"
+              onClick={openMenu}
+              endIcon="➜"
+            >
+              View full digital menu &amp; order now
+            </StarPortalButton>
+            <span className="banner-spark banner-spark-one" aria-hidden="true">✦</span>
+            <span className="banner-spark banner-spark-two" aria-hidden="true">✧</span>
+          </section>
+        </main>
+      )}
+
       {/* Search & Dietary Preference Filter (Fast, uncluttered) */}
+      {!showLanding && <>
       <div className="filters-toolbar">
         <div className="search-wrapper">
           <span className="search-glass">🔍</span>
@@ -436,13 +544,14 @@ export default function App() {
           </div>
         )}
       </main>
+      </>}
 
       {/* Minimal, Professional Restaurant Info Footer */}
-      <footer className="simple-footer">
+      <footer className={`simple-footer ${showLanding ? 'landing-footer' : ''}`}>
         <div className="footer-content">
           <div className="footer-left">
             <strong>Star Planet Family Restaurant & Bar</strong>
-            <p>Y K Nagar, Virar West • Open Daily 11:00 AM – 01:30 AM</p>
+            <p>Y K Nagar, Virar West <span>•</span> Open daily 11:00 AM – 01:30 AM</p>
           </div>
           <a
             href="https://maps.app.goo.gl/Ao1u12QoU8rcesXk6"

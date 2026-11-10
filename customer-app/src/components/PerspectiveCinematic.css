@@ -1,0 +1,478 @@
+/* ==========================================================================
+   ThreeUI Cinematic Perspective UI Component
+   Tactile 3D Stage with Star Portal Holographic Button & Floating Layers
+   ========================================================================== */
+
+.cinematic-section {
+  position: relative;
+  overflow: hidden;
+  padding: 40px 16px 36px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: radial-gradient(circle at 50% 10%, #171510 0%, #0d0c0a 75%, #080807 100%);
+  border-bottom: 1px solid rgba(214, 173, 97, 0.2);
+}
+
+/* --------------------------------------------------------------------------
+   Atmospheric Glow & Grid Backdrop
+   -------------------------------------------------------------------------- */
+.cinematic-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.cinematic-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.28;
+}
+
+.cinematic-glow.gold {
+  width: 440px;
+  height: 440px;
+  background: #d6ad61;
+  top: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.cinematic-glow.cyan {
+  width: 320px;
+  height: 320px;
+  background: #0ea5e9;
+  bottom: 0;
+  right: 15%;
+  opacity: 0.16;
+}
+
+.cinematic-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(214, 173, 97, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(214, 173, 97, 0.05) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 20%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 20%, transparent 80%);
+}
+
+/* --------------------------------------------------------------------------
+   Header Eyebrow & Titles
+   -------------------------------------------------------------------------- */
+.cinematic-eyebrow {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.cinematic-star-badge {
+  background: rgba(214, 173, 97, 0.15);
+  border: 1px solid rgba(214, 173, 97, 0.4);
+  color: #f3cf88;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  box-shadow: 0 0 16px rgba(214, 173, 97, 0.25);
+}
+
+.cinematic-pill-info {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #c7c2b6;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 9999px;
+}
+
+.cinematic-title {
+  position: relative;
+  z-index: 2;
+  font-size: clamp(26px, 5vw, 42px);
+  font-weight: 800;
+  line-height: 1.15;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+  margin-bottom: 12px;
+  max-width: 680px;
+}
+
+.cinematic-title-gradient {
+  background: linear-gradient(135deg, #f3cf88 0%, #d6ad61 50%, #67e8f9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
+.cinematic-subtitle {
+  position: relative;
+  z-index: 2;
+  font-size: 14px;
+  color: #a39e93;
+  line-height: 1.5;
+  max-width: 520px;
+  margin-bottom: 30px;
+}
+
+/* --------------------------------------------------------------------------
+   3D Perspective Stage
+   -------------------------------------------------------------------------- */
+.perspective-stage {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  max-width: 540px;
+  perspective: 1200px;
+  perspective-origin: center center;
+  padding: 10px;
+  margin-bottom: 24px;
+}
+
+.perspective-card-group {
+  position: relative;
+  width: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.perspective-card-group.floating {
+  animation: cinematicFloat 6s ease-in-out infinite alternate;
+}
+
+@keyframes cinematicFloat {
+  0% {
+    transform: rotateX(7deg) rotateY(-8deg) translateY(0px);
+  }
+  50% {
+    transform: rotateX(4deg) rotateY(6deg) translateY(-8px);
+  }
+  100% {
+    transform: rotateX(9deg) rotateY(-6deg) translateY(0px);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Main 3D Panel
+   -------------------------------------------------------------------------- */
+.perspective-main-panel {
+  position: relative;
+  background: linear-gradient(145deg, #181714 0%, #11100e 100%);
+  border: 1px solid rgba(214, 173, 97, 0.35);
+  border-radius: 20px;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.75),
+    0 0 1px 1px rgba(214, 173, 97, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  padding: 20px;
+  overflow: hidden;
+  transform: translateZ(0);
+}
+
+/* Specular reflection sheen that moves with cursor */
+.panel-specular-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    circle 280px at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(255, 255, 255, 0.08),
+    transparent 70%
+  );
+  border-radius: inherit;
+  transition: opacity 0.2s ease;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  margin-bottom: 16px;
+}
+
+.panel-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+
+.panel-star {
+  font-size: 24px;
+  color: #d6ad61;
+}
+
+.panel-brand strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #fff;
+}
+
+.panel-brand small {
+  font-size: 10px;
+  color: #8c8574;
+}
+
+.panel-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #4ade80;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  letter-spacing: 0.5px;
+}
+
+.status-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+  animation: pulseDot 2s infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* Panel Body - Featured Mockup */
+.panel-dish-preview {
+  background: radial-gradient(circle at 50% 30%, #2a251b 0%, #151411 100%);
+  border: 1px solid rgba(214, 173, 97, 0.2);
+  border-radius: 14px;
+  padding: 16px;
+  text-align: left;
+  margin-bottom: 16px;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.dish-tag {
+  display: inline-block;
+  background: rgba(214, 173, 97, 0.2);
+  color: #f3cf88;
+  border: 1px solid rgba(214, 173, 97, 0.4);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.dish-title-wrap h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.dish-title-wrap p {
+  font-size: 12px;
+  color: #9c9586;
+  line-height: 1.35;
+  margin-bottom: 10px;
+}
+
+.dish-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dish-price-badge {
+  font-size: 18px;
+  font-weight: 800;
+  color: #f3cf88;
+}
+
+.dish-diet-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.dish-diet-pill.nonveg {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+
+/* Panel Footer Perks */
+.panel-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 12px;
+}
+
+.panel-perk {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.panel-perk span {
+  font-size: 14px;
+}
+
+.panel-perk small {
+  font-size: 10px;
+  color: #8c8574;
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   3D Floating Layers (Depth arranged by translateZ)
+   -------------------------------------------------------------------------- */
+.perspective-floating-layer {
+  position: absolute;
+  pointer-events: auto;
+  transform-style: preserve-3d;
+}
+
+.floating-card-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(24, 22, 18, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(214, 173, 97, 0.4);
+  border-radius: 9999px;
+  padding: 8px 14px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), 0 0 16px rgba(214, 173, 97, 0.15);
+  text-align: left;
+}
+
+.floating-card-pill b {
+  display: block;
+  font-size: 11px;
+  color: #ffffff;
+}
+
+.floating-card-pill small {
+  font-size: 9px;
+  color: #a39e93;
+}
+
+.floating-icon {
+  font-size: 16px;
+}
+
+.floating-icon.pulse {
+  animation: bellShake 3s ease-in-out infinite;
+}
+
+@keyframes bellShake {
+  0%, 100% { transform: rotate(0); }
+  10%, 30% { transform: rotate(12deg); }
+  20%, 40% { transform: rotate(-12deg); }
+  50% { transform: rotate(0); }
+}
+
+.layer-btn-small {
+  background: #d6ad61;
+  color: #0d0c0a;
+  border: none;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  cursor: pointer;
+  margin-left: 4px;
+}
+
+/* Top-Right Floating Layer (Z: 48px) */
+.layer-table {
+  top: -14px;
+  right: -8px;
+  transform: translateZ(48px);
+}
+
+/* Bottom-Left Floating Layer (Z: 64px) */
+.layer-service {
+  bottom: 24px;
+  left: -12px;
+  transform: translateZ(64px);
+}
+
+/* Center Bottom Floating CTA (Z: 85px) */
+.layer-cta {
+  bottom: -22px;
+  left: 50%;
+  transform: translateX(-50%) translateZ(85px);
+  width: max-content;
+  max-width: 90%;
+}
+
+/* --------------------------------------------------------------------------
+   Bottom Skip / Jump to Menu
+   -------------------------------------------------------------------------- */
+.cinematic-bottom-actions {
+  position: relative;
+  z-index: 2;
+  margin-top: 10px;
+}
+
+.cinematic-skip-btn {
+  background: transparent;
+  border: none;
+  color: #8c8574;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  padding: 6px 12px;
+}
+
+.cinematic-skip-btn:hover {
+  color: #d6ad61;
+}
+
+/* --------------------------------------------------------------------------
+   Mobile Adaptations
+   -------------------------------------------------------------------------- */
+@media (max-width: 480px) {
+  .layer-table {
+    top: -12px;
+    right: 4px;
+    transform: translateZ(36px);
+  }
+
+  .layer-service {
+    display: none; /* Hide secondary layer on very small phones to prevent edge clipping */
+  }
+
+  .layer-cta {
+    bottom: -18px;
+    transform: translateX(-50%) translateZ(60px);
+  }
+
+  .perspective-main-panel {
+    padding: 16px;
+  }
+}
