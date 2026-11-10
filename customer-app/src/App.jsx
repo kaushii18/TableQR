@@ -211,15 +211,7 @@ export default function App() {
 
       {/* Clean, Professional Sticky Header */}
       <header className="header-bar">
-        <div className="brand-group">
-          <div className="brand-logo">✦</div>
-          <div className="brand-meta">
-            <h1 className="brand-name">STAR PLANET</h1>
-            <span className="brand-sub">Restaurant & Bar • Virar West</span>
-          </div>
-        </div>
-
-        <div className="header-actions">
+        <div className="header-left">
           {/* Table Selector */}
           <button
             className={`table-badge-btn ${tableNumber ? 'has-table' : ''}`}
@@ -230,9 +222,11 @@ export default function App() {
             title="Set table number"
           >
             <span className="table-icon">🪑</span>
-            <span className="table-txt">{tableNumber ? `Table ${tableNumber}` : 'Table #'}</span>
+            <span className="table-txt">{tableNumber ? `Table ${tableNumber}` : 'Set Table #'}</span>
           </button>
+        </div>
 
+        <div className="header-actions">
           {/* Call Waiter */}
           <button
             className="action-icon-btn waiter-btn"
