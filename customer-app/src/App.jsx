@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { categories, categoryMeta, menuItems } from './data/menuData'
-import { createOrder, createServiceRequest, isSupabaseConfigured } from './lib/supabase'
+import { createOrder, createServiceRequest } from './lib/supabase'
 import './App.css'
 
 const categoryCounts = {
@@ -17,7 +17,7 @@ const categoryCounts = {
 }
 
 function getCategoryId(category) {
-  return `menu-category-${category.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+  return `cat-${category.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
 }
 
 export default function App() {
@@ -28,7 +28,7 @@ export default function App() {
   const [tempTableInput, setTempTableInput] = useState('')
 
   // Menu filters & search
-  const [activeCategory, setActiveCategory] = useState('All')
+  const [activeCategory, setActiveCategory] = useState('Soups & Salads')
   const [dietFilter, setDietFilter] = useState('All') // 'All' | 'Veg' | 'Non-Veg' | 'Egg'
   const [search, setSearch] = useState('')
 
@@ -42,8 +42,7 @@ export default function App() {
   const [customer, setCustomer] = useState({
     name: '',
     phone: '',
-    paymentMethod: 'UPI', // 'UPI' | 'Counter'
-    orderUpdates: true,
+    paymentMethod: 'UPI',
   })
 
   // Order state
@@ -53,10 +52,9 @@ export default function App() {
   const [serviceModalOpen, setServiceModalOpen] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
 
-  // Trigger brief toast message
   function showToast(msg) {
     setToastMessage(msg)
-    setTimeout(() => setToastMessage(''), 3000)
+    setTimeout(() => setToastMessage(''), 2600)
   }
 
   // Filter menu items dynamically
@@ -64,7 +62,8 @@ export default function App() {
     return menuItems.filter(item => {
       const matchDiet = dietFilter === 'All' || item.type === dietFilter
       const query = search.trim().toLowerCase()
-      const matchSearch = !query ||
+      const matchSearch =
+        !query ||
         item.name.toLowerCase().includes(query) ||
         item.category.toLowerCase().includes(query) ||
         (item.description && item.description.toLowerCase().includes(query))
@@ -73,30 +72,35 @@ export default function App() {
   }, [dietFilter, search])
 
   const groupedMenu = useMemo(
-    () => categories.slice(1)
-      .map(category => ({
-        category,
-        items: filteredMenu.filter(item => item.category === category),
-      }))
-      .filter(section => section.items.length > 0),
+    () =>
+      categories
+        .slice(1)
+        .map(category => ({
+          category,
+          items: filteredMenu.filter(item => item.category === category),
+        }))
+        .filter(section => section.items.length > 0),
     [filteredMenu],
   )
 
+  // Auto-highlight active category on scroll
   useEffect(() => {
     const sections = document.querySelectorAll('[data-menu-category]')
     if (!sections.length || !('IntersectionObserver' in window)) return undefined
 
-    const observer = new IntersectionObserver((entries) => {
-      const visibleSections = entries
-        .filter(entry => entry.isIntersecting)
-        .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+    const observer = new IntersectionObserver(
+      entries => {
+        const visible = entries
+          .filter(e => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+        if (visible[0]) {
+          setActiveCategory(visible[0].target.dataset.menuCategory)
+        }
+      },
+      { rootMargin: '-15% 0px -70% 0px' },
+    )
 
-      if (visibleSections[0]) {
-        setActiveCategory(visibleSections[0].target.dataset.menuCategory)
-      }
-    }, { rootMargin: '-18% 0px -68% 0px' })
-
-    sections.forEach(section => observer.observe(section))
+    sections.forEach(s => observer.observe(s))
     return () => observer.disconnect()
   }, [groupedMenu])
 
@@ -116,25 +120,20 @@ export default function App() {
       const existing = curr.find(ci => ci.item.id === item.id)
       if (existing) {
         return curr.map(ci =>
-          ci.item.id === item.id ? { ...ci, quantity: ci.quantity + 1 } : ci
+          ci.item.id === item.id ? { ...ci, quantity: ci.quantity + 1 } : ci,
         )
       }
       return [...curr, { item, quantity: 1 }]
     })
-    showToast(`Added ${item.name} to cart`)
+    showToast(`Added ${item.name}`)
   }
 
   function changeQuantity(itemId, amount) {
-    setCart(curr => {
-      return curr
-        .map(ci => {
-          if (ci.item.id === itemId) {
-            return { ...ci, quantity: ci.quantity + amount }
-          }
-          return ci
-        })
-        .filter(ci => ci.quantity > 0)
-    })
+    setCart(curr =>
+      curr
+        .map(ci => (ci.item.id === itemId ? { ...ci, quantity: ci.quantity + amount } : ci))
+        .filter(ci => ci.quantity > 0),
+    )
   }
 
   function handleSaveTable(e) {
@@ -142,7 +141,7 @@ export default function App() {
     if (tempTableInput.trim()) {
       setTableNumber(tempTableInput.trim())
       setTableModalOpen(false)
-      showToast(`Dining at Table ${tempTableInput.trim()}`)
+      showToast(`Set to Table ${tempTableInput.trim()}`)
     }
   }
 
@@ -153,7 +152,7 @@ export default function App() {
       setCheckoutOpen(false)
       setTempTableInput('')
       setTableModalOpen(true)
-      showToast('Please enter your table number first')
+      showToast('Please enter your table number')
       return
     }
 
@@ -172,9 +171,7 @@ export default function App() {
       date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
     }
 
-    // Persist to Supabase and LocalStorage
     await createOrder(orderData)
-
     setPlacedOrder(orderData)
     setCart([])
     setSpecialInstructions('')
@@ -192,306 +189,227 @@ export default function App() {
   }
 
   return (
-    <div className="app">
-      {/* Toast Notification */}
+    <div className="app-container">
+      {/* Brief Floating Toast */}
       {toastMessage && (
-        <div className="toast-notification">
-          <span>✦ {toastMessage}</span>
+        <div className="toast-pill">
+          <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* Top Announcement Bar */}
-      <div className="top-banner">
-        <div className="top-banner-content">
-          <span>✨ <b>STAR PLANET FAMILY RESTAURANT & BAR</b> • VIRAR WEST</span>
-          <span className="banner-badge">TABLE DIGITAL ORDERING</span>
-        </div>
-      </div>
-
-      {/* Main Navigation Header */}
-      <header className="navbar">
-        <div className="nav-left">
-          <a href="#home" className="brand">
-            <span className="brand-star">✦</span>
-            <div className="brand-text">
-              <span className="brand-title">STAR <b>PLANET</b></span>
-              <span className="brand-subtitle">FAMILY RESTAURANT & BAR</span>
-            </div>
-          </a>
+      {/* Clean, Professional Sticky Header */}
+      <header className="header-bar">
+        <div className="brand-group">
+          <div className="brand-logo">✦</div>
+          <div className="brand-meta">
+            <h1 className="brand-name">STAR PLANET</h1>
+            <span className="brand-sub">Restaurant & Bar • Virar West</span>
+          </div>
         </div>
 
-        <div className="nav-center">
-          <nav>
-            <a href="#menu" className="nav-link">Full Menu</a>
-            <a href="#specials" className="nav-link">Chef Specials</a>
-            <a href="#about" className="nav-link">About & Directions</a>
-          </nav>
-        </div>
-
-        <div className="nav-right">
-          {/* Table Chip / Selector */}
+        <div className="header-actions">
+          {/* Table Selector */}
           <button
-            className={`table-chip ${tableNumber ? 'active' : 'unassigned'}`}
+            className={`table-badge-btn ${tableNumber ? 'has-table' : ''}`}
             onClick={() => {
               setTempTableInput(tableNumber)
               setTableModalOpen(true)
             }}
-            title="Click to set or change table"
+            title="Set table number"
           >
-            <span className="table-chip-icon">🪑</span>
-            <span>{tableNumber ? `Table ${tableNumber}` : 'Set Table #'}</span>
+            <span className="table-icon">🪑</span>
+            <span className="table-txt">{tableNumber ? `Table ${tableNumber}` : 'Set Table'}</span>
           </button>
 
-          {/* Call Waiter Button */}
+          {/* Call Waiter */}
           <button
-            className="waiter-button"
+            className="action-icon-btn waiter-btn"
             onClick={() => setServiceModalOpen(true)}
-            title="Request Service or Waiter"
+            title="Call Captain / Service"
           >
-            🔔 <span className="waiter-label">Service</span>
+            🔔 <span className="btn-label">Waiter</span>
           </button>
 
-          {/* Cart Trigger */}
+          {/* Cart Icon */}
           <button
-            className="cart-button"
+            className="action-icon-btn cart-btn"
             onClick={() => setCartOpen(true)}
-            aria-label="View Cart"
+            title="View Cart"
           >
-            <span className="cart-icon">🛒</span>
-            <span className="cart-title">Order</span>
-            <span className="cart-badge">{cartCount}</span>
+            🛒 <span className="btn-label">Cart</span>
+            {cartCount > 0 && <span className="cart-badge-count">{cartCount}</span>}
           </button>
         </div>
       </header>
 
-      {/* Hero Welcome Section */}
-      <section className="hero" id="home">
-        <div className="hero-overlay"></div>
-        <div className="hero-content">
-          <div className="hero-eyebrow">
-            <span className="gold-dot">●</span> VIRAR’S PREMIER DINING DESTINATION
-          </div>
-          <h1>
-            Experience Flavors.<br />
-            <em>Celebrate Moments.</em>
-          </h1>
-          <p className="hero-desc">
-            Savor authentic North Indian, Tandoori sizzlers, Chinese wok dishes,
-            coastal seafood & refreshing bar beverages. Freshly prepared to order right at your table.
-          </p>
-
-          <div className="hero-actions">
-            <a href="#menu" className="btn-primary">
-              EXPLORE FULL MENU ({menuItems.length} ITEMS) ↓
-            </a>
-            <button
-              className="btn-secondary"
-              onClick={() => {
-                setTempTableInput(tableNumber)
-                setTableModalOpen(true)
-              }}
-            >
-              {tableNumber ? `Dine-In: Table ${tableNumber} (Edit)` : 'Enter Your Table Number'}
+      {/* Search & Dietary Preference Filter (Fast, uncluttered) */}
+      <div className="filters-toolbar">
+        <div className="search-wrapper">
+          <span className="search-glass">🔍</span>
+          <input
+            type="search"
+            className="search-input"
+            placeholder="Search 380+ dishes (Biryani, Tandoori, Paneer, Soup)..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button className="search-clear-btn" onClick={() => setSearch('')}>
+              ✕
             </button>
-          </div>
-
-          <div className="hero-perks">
-            <div className="perk-item">
-              <span className="perk-icon">🥘</span>
-              <div>
-                <strong>380+ Authentic Dishes</strong>
-                <small>Tandoor, Curries, Chinese & Bar</small>
-              </div>
-            </div>
-            <div className="perk-item">
-              <span className="perk-icon">📱</span>
-              <div>
-                <strong>Instant Table QR Ordering</strong>
-                <small>Direct to kitchen without waiting</small>
-              </div>
-            </div>
-            <div className="perk-item">
-              <span className="perk-icon">🍸</span>
-              <div>
-                <strong>Family Dining & Full Bar</strong>
-                <small>Cocktails, Mocktails & Delicacies</small>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Main Menu Section */}
-      <main className="menu-container" id="menu">
-        <div className="menu-header">
-          <div className="section-tag">STAR PLANET DIGITAL MENU</div>
-          <h2>Explore Our <em>Culinary Delights</em></h2>
-          <p>Browse categories, search dishes, filter dietary preferences, and order fresh food.</p>
+          )}
         </div>
 
-        {/* Search & Dietary Filter Toolbar */}
-        <div className="menu-controls-wrapper">
-          <div className="search-box">
-            <span className="search-icon">🔍</span>
-            <input
-              type="search"
-              placeholder="Search 380+ dishes (e.g., Ghee Roast, Biryani, Naan, Paneer, Soup)..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-            {search && (
-              <button className="clear-search" onClick={() => setSearch('')}>✕</button>
-            )}
-          </div>
-
-          {/* Diet Filter Pills */}
-          <div className="diet-filters">
-            <button
-              className={`diet-pill ${dietFilter === 'All' ? 'active' : ''}`}
-              onClick={() => setDietFilter('All')}
-            >
-              All Dishes
-            </button>
-            <button
-              className={`diet-pill veg ${dietFilter === 'Veg' ? 'active' : ''}`}
-              onClick={() => setDietFilter('Veg')}
-            >
-              <span className="food-symbol veg"></span> Pure Veg
-            </button>
-            <button
-              className={`diet-pill nonveg ${dietFilter === 'Non-Veg' ? 'active' : ''}`}
-              onClick={() => setDietFilter('Non-Veg')}
-            >
-              <span className="food-symbol nonveg"></span> Non-Veg
-            </button>
-            <button
-              className={`diet-pill egg ${dietFilter === 'Egg' ? 'active' : ''}`}
-              onClick={() => setDietFilter('Egg')}
-            >
-              <span className="food-symbol egg"></span> Egg
-            </button>
-          </div>
+        {/* Diet quick switch */}
+        <div className="diet-switch-row">
+          <button
+            className={`diet-tab ${dietFilter === 'All' ? 'active' : ''}`}
+            onClick={() => setDietFilter('All')}
+          >
+            All
+          </button>
+          <button
+            className={`diet-tab veg ${dietFilter === 'Veg' ? 'active' : ''}`}
+            onClick={() => setDietFilter('Veg')}
+          >
+            <span className="fssai-dot veg"></span> Veg
+          </button>
+          <button
+            className={`diet-tab nonveg ${dietFilter === 'Non-Veg' ? 'active' : ''}`}
+            onClick={() => setDietFilter('Non-Veg')}
+          >
+            <span className="fssai-dot nonveg"></span> Non-Veg
+          </button>
+          <button
+            className={`diet-tab egg ${dietFilter === 'Egg' ? 'active' : ''}`}
+            onClick={() => setDietFilter('Egg')}
+          >
+            <span className="fssai-dot egg"></span> Egg
+          </button>
         </div>
+      </div>
 
-        {/* Sticky Category Tabs */}
-        <div className="categories-scroll-bar">
-          <nav className="categories-scroll" aria-label="Menu categories">
-            {categories.slice(1).map(cat => {
-              const meta = categoryMeta[cat] || { icon: '🍽️' }
+      {/* Sticky Categories Navigation Bar */}
+      <nav className="category-nav-bar" aria-label="Menu categories">
+        <div className="category-nav-scroll">
+          {categories.slice(1).map(cat => {
+            const meta = categoryMeta[cat] || { icon: '🍽️' }
+            const isSelected = activeCategory === cat
 
-              return (
-                <button
-                  key={cat}
-                  className={`category-tab ${activeCategory === cat ? 'active' : ''}`}
-                  aria-current={activeCategory === cat ? 'location' : undefined}
-                  onClick={() => {
-                    setActiveCategory(cat)
-                    document.getElementById(getCategoryId(cat))?.scrollIntoView({
-                      behavior: 'smooth',
-                      block: 'start',
-                    })
-                  }}
-                >
-                  <span className="cat-icon">{meta.icon}</span>
-                  <span className="cat-name">{cat}</span>
-                  <span className="cat-count">{categoryCounts[cat]}</span>
-                </button>
-              )
-            })}
-          </nav>
+            return (
+              <button
+                key={cat}
+                className={`category-pill ${isSelected ? 'active' : ''}`}
+                onClick={() => {
+                  setActiveCategory(cat)
+                  const target = document.getElementById(getCategoryId(cat))
+                  if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  }
+                }}
+              >
+                <span className="pill-icon">{meta.icon}</span>
+                <span className="pill-text">{cat}</span>
+                <span className="pill-count">{categoryCounts[cat]}</span>
+              </button>
+            )
+          })}
         </div>
+      </nav>
 
-        {/* Menu Categories and Food Items */}
+      {/* Main Menu Body */}
+      <main className="menu-content">
         {groupedMenu.map(({ category, items }) => (
           <section
-            className="menu-category-section"
+            key={category}
             id={getCategoryId(category)}
             data-menu-category={category}
-            key={category}
+            className="category-group"
           >
-            <div className="menu-category-heading">
-              <div>
-                <span className="section-tag">{categoryMeta[category]?.icon} OUR MENU</span>
-                <h3>{category}</h3>
-                <p>{categoryMeta[category]?.desc}</p>
+            <div className="category-group-header">
+              <div className="cgh-left">
+                <span className="cgh-icon">{categoryMeta[category]?.icon || '🍽️'}</span>
+                <h2>{category}</h2>
               </div>
-              <span className="item-count-badge">
-                {items.length} {items.length === 1 ? 'dish' : 'dishes'}
-              </span>
+              <span className="cgh-count">{items.length} items</span>
             </div>
-            <div className="food-grid">
+
+            <div className="dishes-list">
               {items.map(item => {
                 const qty = getQuantity(item.id)
+                const isVeg = item.type === 'Veg'
+                const isEgg = item.type === 'Egg'
+                const typeClass = isVeg ? 'veg' : isEgg ? 'egg' : 'nonveg'
 
                 return (
-                  <article className="food-card" key={item.id}>
-                    <div className={`food-image-wrap ${item.image ? '' : 'image-placeholder'}`}>
-                      {item.image && (
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          loading="lazy"
-                          onError={e => {
-                            e.currentTarget.hidden = true
-                            e.currentTarget.parentElement?.classList.add('image-placeholder')
-                          }}
-                        />
-                      )}
-                      <div className="food-placeholder" aria-hidden="true">
-                        <span>{categoryMeta[item.category]?.icon || '🍽️'}</span>
-                        <small>Photo coming soon</small>
+                  <article key={item.id} className="dish-row">
+                    {/* Left: Details */}
+                    <div className="dish-info">
+                      <div className="dish-header-line">
+                        <span className={`fssai-dot ${typeClass}`} title={item.type}></span>
+                        {item.isChefSpecial && <span className="mini-tag special">★ Chef Special</span>}
+                        {item.isPopular && !item.isChefSpecial && <span className="mini-tag popular">🔥 Popular</span>}
                       </div>
-                      <div className="food-badges">
-                        <span className={`symbol-badge ${item.type.toLowerCase()}`} title={item.type}>
-                          <span className={`food-symbol ${item.type.toLowerCase()}`}></span>
-                          <small>{item.type}</small>
-                        </span>
-                        {item.isChefSpecial && (
-                          <span className="chef-special-badge">👑 Chef Special</span>
-                        )}
-                        {item.isPopular && !item.isChefSpecial && (
-                          <span className="bestseller-badge">🔥 Popular</span>
-                        )}
+
+                      <h3 className="dish-title">{item.name}</h3>
+
+                      <div className="dish-price">
+                        <span className="price-curr">₹</span>
+                        <span className="price-val">{item.price}</span>
                       </div>
+
+                      {item.description && <p className="dish-desc">{item.description}</p>}
                     </div>
 
-                    <div className="food-body">
-                      <h4 className="food-title">{item.name}</h4>
-                      {item.description && <p className="food-desc">{item.description}</p>}
-
-                      <div className="food-footer">
-                        <div className="price-tag">
-                          <span className="currency">₹</span>
-                          <span className="amount">{item.price}</span>
-                        </div>
-
-                        {qty === 0 ? (
-                          <button
-                            className="btn-add-food"
-                            onClick={() => addToCart(item)}
-                          >
-                            + ADD
-                          </button>
-                        ) : (
-                          <div className="card-qty-controller">
-                            <button
-                              className="qty-btn"
-                              onClick={() => changeQuantity(item.id, -1)}
-                              aria-label="Decrease quantity"
-                            >
-                              −
-                            </button>
-                            <span className="qty-number">{qty}</span>
-                            <button
-                              className="qty-btn"
-                              onClick={() => changeQuantity(item.id, 1)}
-                              aria-label="Increase quantity"
-                            >
-                              +
-                            </button>
+                    {/* Right: Media & Add Controller */}
+                    <div className="dish-action-col">
+                      {item.image ? (
+                        <div className="dish-thumb-wrap">
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="dish-thumb-img"
+                            loading="lazy"
+                            onError={e => {
+                              // If image fails, cleanly hide it without broken box
+                              e.currentTarget.style.display = 'none'
+                            }}
+                          />
+                          <div className="dish-thumb-btn-overlay">
+                            {qty === 0 ? (
+                              <button
+                                className="add-btn-primary"
+                                onClick={() => addToCart(item)}
+                              >
+                                ADD +
+                              </button>
+                            ) : (
+                              <div className="qty-stepper compact">
+                                <button onClick={() => changeQuantity(item.id, -1)}>−</button>
+                                <span>{qty}</span>
+                                <button onClick={() => changeQuantity(item.id, 1)}>+</button>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      ) : (
+                        <div className="dish-no-thumb">
+                          {qty === 0 ? (
+                            <button
+                              className="add-btn-primary"
+                              onClick={() => addToCart(item)}
+                            >
+                              ADD +
+                            </button>
+                          ) : (
+                            <div className="qty-stepper">
+                              <button onClick={() => changeQuantity(item.id, -1)}>−</button>
+                              <span>{qty}</span>
+                              <button onClick={() => changeQuantity(item.id, 1)}>+</button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </article>
                 )
@@ -500,229 +418,151 @@ export default function App() {
           </section>
         ))}
 
-        {/* Empty Search Results */}
+        {/* Empty State */}
         {filteredMenu.length === 0 && (
-          <div className="empty-results">
-            <span className="empty-icon">🍽️</span>
+          <div className="empty-state-box">
+            <span className="empty-state-icon">🍽️</span>
             <h3>No dishes found</h3>
-            <p>We couldn't find any dish matching "{search}" with current filters.</p>
+            <p>No items matched "{search}". Try searching for another dish or reset filters.</p>
             <button
-              className="btn-secondary"
+              className="reset-filters-btn"
               onClick={() => {
                 setSearch('')
                 setDietFilter('All')
-                setActiveCategory('All')
               }}
             >
-              Reset All Filters
+              Reset Filters
             </button>
           </div>
         )}
       </main>
 
-      {/* Restaurant Highlights & About Section */}
-      <section className="about-section" id="about">
-        <div className="about-grid">
-          <div className="about-info">
-            <span className="about-tag">AUTHENTIC HOSPITALITY</span>
-            <h2>Star Planet <em>Family Restaurant & Bar</em></h2>
-            <p>
-              Located in the heart of Virar West, Star Planet offers a vibrant ambience,
-              warm family dining, and an extensive bar menu. Whether you are craving
-              smoky tandoor kebabs, rich butter gravies, wok-tossed noodles, or chilled draught beer,
-              our chefs prepare each delicacy with high quality and care.
-            </p>
-
-            <div className="location-details">
-              <div className="loc-row">
-                <span className="loc-icon">📍</span>
-                <div>
-                  <strong>Address</strong>
-                  <p>Y K Nagar, Virar West, Palghar, Maharashtra 401303</p>
-                </div>
-              </div>
-              <div className="loc-row">
-                <span className="loc-icon">⏰</span>
-                <div>
-                  <strong>Dining Hours</strong>
-                  <p>Open Daily: 11:00 AM – 01:30 AM (Midnight Bar & Kitchen)</p>
-                </div>
-              </div>
-              <div className="loc-row">
-                <span className="loc-icon">📞</span>
-                <div>
-                  <strong>Reservations & Enquiries</strong>
-                  <p>Dine-In • Takeaway • Private Parties & Family Dinners</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="about-actions">
-              <a
-                href="https://maps.app.goo.gl/Ao1u12QoU8rcesXk6"
-                target="_blank"
-                rel="noreferrer"
-                className="btn-map"
-              >
-                🗺️ Get Google Maps Directions ↗
-              </a>
-            </div>
+      {/* Minimal, Professional Restaurant Info Footer */}
+      <footer className="simple-footer">
+        <div className="footer-content">
+          <div className="footer-left">
+            <strong>Star Planet Family Restaurant & Bar</strong>
+            <p>Y K Nagar, Virar West • Open Daily 11:00 AM – 01:30 AM</p>
           </div>
-
-          <div className="about-card-banner">
-            <div className="banner-badge-box">
-              <span className="big-star">✦</span>
-              <h3>Premium Dining Experience</h3>
-              <p>Scan QR • Order Instantly • Relax & Enjoy</p>
-              <div className="banner-stats">
-                <div>
-                  <b>380+</b>
-                  <small>Menu Items</small>
-                </div>
-                <div>
-                  <b>10</b>
-                  <small>Cuisine Sections</small>
-                </div>
-                <div>
-                  <b>100%</b>
-                  <small>Freshly Cooked</small>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="footer">
-        <div className="footer-top">
-          <div className="footer-brand">
-            <span className="footer-star">✦</span>
-            <h3>STAR <b>PLANET</b></h3>
-            <p>Family Restaurant & Bar • Virar West</p>
-          </div>
-          <div className="footer-links">
-            <a href="#home">Home</a>
-            <a href="#menu">Menu</a>
-            <a href="#about">About & Location</a>
-            <a href="https://maps.app.goo.gl/Ao1u12QoU8rcesXk6" target="_blank" rel="noreferrer">Google Maps</a>
-          </div>
-        </div>
-        <div className="footer-bottom">
-          <p>© {new Date().getFullYear()} Star Planet Family Restaurant & Bar. All rights reserved.</p>
-          <small>TableQR Digital Ordering Platform</small>
+          <a
+            href="https://maps.app.goo.gl/Ao1u12QoU8rcesXk6"
+            target="_blank"
+            rel="noreferrer"
+            className="footer-map-link"
+          >
+            Directions ↗
+          </a>
         </div>
       </footer>
 
-      {/* Floating Bottom Cart Bar for Mobile */}
+      {/* Floating Bottom Cart Bar (Appears when items in cart) */}
       {cartCount > 0 && !cartOpen && !checkoutOpen && (
-        <div className="floating-cart-bar">
-          <div className="floating-cart-info">
-            <span className="floating-qty">{cartCount} item{cartCount > 1 ? 's' : ''}</span>
-            <span className="floating-divider">•</span>
-            <span className="floating-total">₹{grandTotal}</span>
+        <aside className="bottom-cart-bar" aria-label="Cart summary">
+          <div className="bcb-details">
+            <span className="bcb-count">
+              {cartCount} {cartCount === 1 ? 'item' : 'items'}
+            </span>
+            <span className="bcb-sep">•</span>
+            <span className="bcb-price">₹{grandTotal}</span>
           </div>
-          <button className="floating-cart-action" onClick={() => setCartOpen(true)}>
-            View Cart 🛒 ➔
+          <button className="bcb-btn" onClick={() => setCartOpen(true)}>
+            View Cart ➔
           </button>
-        </div>
+        </aside>
       )}
 
-      {/* Cart Drawer Slide-out */}
+      {/* Cart Drawer */}
       {cartOpen && (
-        <div className="modal-backdrop" onClick={() => setCartOpen(false)}>
-          <div className="cart-drawer" onClick={e => e.stopPropagation()}>
+        <div className="overlay-backdrop" onClick={() => setCartOpen(false)}>
+          <div className="cart-drawer-sheet" onClick={e => e.stopPropagation()}>
             <div className="drawer-header">
-              <div className="drawer-title-box">
+              <div>
                 <h2>Your Order</h2>
-                <span className="drawer-table-badge">
-                  {tableNumber ? `Table ${tableNumber}` : 'Table not set'}
+                <span className="drawer-sub">
+                  {tableNumber ? `Table ${tableNumber}` : 'Table not assigned'}
                 </span>
               </div>
-              <button className="btn-close" onClick={() => setCartOpen(false)}>✕</button>
+              <button className="drawer-close-btn" onClick={() => setCartOpen(false)}>
+                ✕
+              </button>
             </div>
 
             {cart.length === 0 ? (
-              <div className="drawer-empty">
-                <span className="empty-emoji">🛒</span>
+              <div className="drawer-empty-body">
+                <span className="empty-cart-icon">🛒</span>
                 <h3>Your cart is empty</h3>
-                <p>Add your favourite starters, main course curries or drinks from the menu.</p>
-                <button className="btn-primary" onClick={() => setCartOpen(false)}>
+                <p>Select your favorite starters, main courses or beverages from the menu.</p>
+                <button className="primary-pill-btn" onClick={() => setCartOpen(false)}>
                   Browse Menu
                 </button>
               </div>
             ) : (
-              <div className="drawer-body">
-                {/* Item List */}
-                <div className="cart-items-list">
-                  {cart.map(ci => (
-                    <div className="cart-item-row" key={ci.item.id}>
-                      <div className="ci-left">
-                        <span className={`food-symbol ${ci.item.type.toLowerCase()}`}></span>
-                        <div className="ci-info">
-                          <strong className="ci-name">{ci.item.name}</strong>
-                          <span className="ci-unit-price">₹{ci.item.price} each</span>
-                        </div>
-                      </div>
+              <div className="drawer-scroll-body">
+                <div className="cart-items-box">
+                  {cart.map(ci => {
+                    const isVeg = ci.item.type === 'Veg'
+                    const isEgg = ci.item.type === 'Egg'
+                    const typeClass = isVeg ? 'veg' : isEgg ? 'egg' : 'nonveg'
 
-                      <div className="ci-right">
-                        <div className="card-qty-controller compact">
-                          <button
-                            className="qty-btn"
-                            onClick={() => changeQuantity(ci.item.id, -1)}
-                          >
-                            −
-                          </button>
-                          <span className="qty-number">{ci.quantity}</span>
-                          <button
-                            className="qty-btn"
-                            onClick={() => changeQuantity(ci.item.id, 1)}
-                          >
-                            +
-                          </button>
+                    return (
+                      <div key={ci.item.id} className="cart-item-row">
+                        <div className="cir-info">
+                          <span className={`fssai-dot ${typeClass}`}></span>
+                          <div>
+                            <strong className="cir-name">{ci.item.name}</strong>
+                            <span className="cir-unit-price">₹{ci.item.price}</span>
+                          </div>
                         </div>
-                        <span className="ci-total">₹{ci.item.price * ci.quantity}</span>
+
+                        <div className="cir-actions">
+                          <div className="qty-stepper compact">
+                            <button onClick={() => changeQuantity(ci.item.id, -1)}>−</button>
+                            <span>{ci.quantity}</span>
+                            <button onClick={() => changeQuantity(ci.item.id, 1)}>+</button>
+                          </div>
+                          <span className="cir-total">₹{ci.item.price * ci.quantity}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
 
-                {/* Cooking Instructions Input */}
-                <div className="cooking-notes-box">
-                  <label>Special Instructions for the Kitchen (Optional):</label>
+                {/* Kitchen Special Note */}
+                <div className="kitchen-note-box">
+                  <label htmlFor="kitchen-notes">Cooking instructions (Optional):</label>
                   <input
+                    id="kitchen-notes"
                     type="text"
-                    placeholder="e.g. Less spicy, extra lemon, prepare without onion..."
+                    placeholder="e.g. Less spicy, extra lemon, without onion..."
                     value={specialInstructions}
                     onChange={e => setSpecialInstructions(e.target.value)}
                   />
                 </div>
 
                 {/* Bill Breakdown */}
-                <div className="bill-summary">
-                  <div className="bill-row">
-                    <span>Items Subtotal</span>
+                <div className="bill-card">
+                  <div className="bill-line">
+                    <span>Item Subtotal</span>
                     <span>₹{subtotal}</span>
                   </div>
-                  <div className="bill-row">
-                    <span>Restaurant GST (5%)</span>
+                  <div className="bill-line">
+                    <span>GST (5%)</span>
                     <span>₹{tax}</span>
                   </div>
-                  <div className="bill-row grand-total">
+                  <div className="bill-line grand">
                     <strong>Total Amount</strong>
                     <strong>₹{grandTotal}</strong>
                   </div>
                 </div>
 
-                {/* Checkout Trigger */}
                 <button
-                  className="btn-primary full-width"
+                  className="primary-checkout-btn"
                   onClick={() => {
                     setCartOpen(false)
                     setCheckoutOpen(true)
                   }}
                 >
-                  PROCEED TO ORDER (₹{grandTotal}) ➔
+                  Confirm & Place Order (₹{grandTotal}) ➔
                 </button>
               </div>
             )}
@@ -732,28 +572,28 @@ export default function App() {
 
       {/* Checkout Modal */}
       {checkoutOpen && (
-        <div className="modal-backdrop" onClick={() => setCheckoutOpen(false)}>
+        <div className="overlay-backdrop" onClick={() => setCheckoutOpen(false)}>
           <form
-            className="checkout-modal"
+            className="clean-modal-card"
             onSubmit={handlePlaceOrder}
             onClick={e => e.stopPropagation()}
           >
-            <div className="modal-header">
+            <div className="modal-title-row">
               <div>
                 <h2>Confirm Table Order</h2>
-                <small>Send directly to Star Planet Kitchen</small>
+                <small>Sends directly to Star Planet Kitchen</small>
               </div>
               <button
                 type="button"
-                className="btn-close"
+                className="drawer-close-btn"
                 onClick={() => setCheckoutOpen(false)}
               >
                 ✕
               </button>
             </div>
 
-            <div className="modal-body">
-              <div className="form-group">
+            <div className="modal-form-content">
+              <div className="input-field-group">
                 <label>Table Number *</label>
                 <input
                   required
@@ -764,7 +604,7 @@ export default function App() {
                 />
               </div>
 
-              <div className="form-group">
+              <div className="input-field-group">
                 <label>Your Name *</label>
                 <input
                   required
@@ -775,8 +615,8 @@ export default function App() {
                 />
               </div>
 
-              <div className="form-group">
-                <label>Mobile Number (For Order Updates) *</label>
+              <div className="input-field-group">
+                <label>Mobile Number (For order updates) *</label>
                 <input
                   required
                   type="tel"
@@ -788,10 +628,10 @@ export default function App() {
                 />
               </div>
 
-              <div className="form-group">
-                <label>Payment Preference</label>
-                <div className="payment-options">
-                  <label className={`payment-pill ${customer.paymentMethod === 'UPI' ? 'selected' : ''}`}>
+              <div className="input-field-group">
+                <label>Payment Mode</label>
+                <div className="payment-radio-group">
+                  <label className={`pay-chip ${customer.paymentMethod === 'UPI' ? 'selected' : ''}`}>
                     <input
                       type="radio"
                       name="payment"
@@ -799,9 +639,9 @@ export default function App() {
                       checked={customer.paymentMethod === 'UPI'}
                       onChange={() => setCustomer({ ...customer, paymentMethod: 'UPI' })}
                     />
-                    <span>📲 Pay via UPI / QR on Table</span>
+                    <span>📲 UPI / Online at Table</span>
                   </label>
-                  <label className={`payment-pill ${customer.paymentMethod === 'Counter' ? 'selected' : ''}`}>
+                  <label className={`pay-chip ${customer.paymentMethod === 'Counter' ? 'selected' : ''}`}>
                     <input
                       type="radio"
                       name="payment"
@@ -809,63 +649,57 @@ export default function App() {
                       checked={customer.paymentMethod === 'Counter'}
                       onChange={() => setCustomer({ ...customer, paymentMethod: 'Counter' })}
                     />
-                    <span>💵 Pay Cash / Card at Counter</span>
+                    <span>💵 Cash / Card at Counter</span>
                   </label>
                 </div>
               </div>
 
-              <div className="order-final-bill">
-                <div className="of-row">
-                  <span>Total Items:</span>
-                  <b>{cartCount}</b>
-                </div>
-                <div className="of-row">
-                  <span>Grand Total:</span>
-                  <b className="total-gold">₹{grandTotal}</b>
-                </div>
+              <div className="modal-bill-summary">
+                <span>Total Payable ({cartCount} items):</span>
+                <b>₹{grandTotal}</b>
               </div>
 
-              <button type="submit" className="btn-primary full-width">
-                PLACE ORDER NOW
+              <button type="submit" className="primary-checkout-btn">
+                Send Order to Kitchen ➔
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* Set Table Number Modal */}
+      {/* Set Table Modal */}
       {tableModalOpen && (
-        <div className="modal-backdrop" onClick={() => setTableModalOpen(false)}>
+        <div className="overlay-backdrop" onClick={() => setTableModalOpen(false)}>
           <form
-            className="dialog-modal"
+            className="clean-modal-card small"
             onSubmit={handleSaveTable}
             onClick={e => e.stopPropagation()}
           >
-            <div className="modal-header">
+            <div className="modal-title-row">
               <h3>Enter Table Number</h3>
               <button
                 type="button"
-                className="btn-close"
+                className="drawer-close-btn"
                 onClick={() => setTableModalOpen(false)}
               >
                 ✕
               </button>
             </div>
-            <div className="modal-body">
-              <p className="dialog-desc">
-                Please enter the table number displayed on your table QR stand so your order reaches you accurately.
+            <div className="modal-form-content">
+              <p className="modal-help-txt">
+                Check the number displayed on your table stand (e.g. 7, 14, AC-2).
               </p>
-              <div className="form-group">
+              <div className="input-field-group">
                 <input
                   autoFocus
                   required
                   type="text"
-                  placeholder="e.g. 7 or AC-4"
+                  placeholder="Enter table number"
                   value={tempTableInput}
                   onChange={e => setTempTableInput(e.target.value)}
                 />
               </div>
-              <button type="submit" className="btn-primary full-width">
+              <button type="submit" className="primary-checkout-btn">
                 Confirm Table
               </button>
             </div>
@@ -873,42 +707,48 @@ export default function App() {
         </div>
       )}
 
-      {/* Call Waiter / Service Modal */}
+      {/* Call Waiter Modal */}
       {serviceModalOpen && (
-        <div className="modal-backdrop" onClick={() => setServiceModalOpen(false)}>
-          <div className="dialog-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className="overlay-backdrop" onClick={() => setServiceModalOpen(false)}>
+          <div className="clean-modal-card small" onClick={e => e.stopPropagation()}>
+            <div className="modal-title-row">
               <h3>🔔 Request Service</h3>
-              <button className="btn-close" onClick={() => setServiceModalOpen(false)}>✕</button>
+              <button className="drawer-close-btn" onClick={() => setServiceModalOpen(false)}>
+                ✕
+              </button>
             </div>
-            <div className="modal-body">
-              <p className="dialog-desc">
-                Need something at {tableNumber ? `Table ${tableNumber}` : 'your table'}? Tap below and our captain will attend immediately.
+            <div className="modal-form-content">
+              <p className="modal-help-txt">
+                Need service at {tableNumber ? `Table ${tableNumber}` : 'your table'}? Tap below:
               </p>
-              <div className="service-options-grid">
+              <div className="waiter-service-grid">
                 <button
-                  className="service-btn"
+                  className="service-option-btn"
                   onClick={() => handleCallWaiter('Captain assistance')}
                 >
-                  <span>🙋‍♂️</span> Call Waiter / Captain
+                  <span>🙋‍♂️</span>
+                  <span>Call Waiter</span>
                 </button>
                 <button
-                  className="service-btn"
+                  className="service-option-btn"
                   onClick={() => handleCallWaiter('Drinking water refill')}
                 >
-                  <span>💧</span> Request Drinking Water
+                  <span>💧</span>
+                  <span>Drinking Water</span>
                 </button>
                 <button
-                  className="service-btn"
+                  className="service-option-btn"
                   onClick={() => handleCallWaiter('Extra cutlery / plates')}
                 >
-                  <span>🍴</span> Cutlery & Plates
+                  <span>🍴</span>
+                  <span>Cutlery & Plates</span>
                 </button>
                 <button
-                  className="service-btn"
+                  className="service-option-btn"
                   onClick={() => handleCallWaiter('Bill presentation')}
                 >
-                  <span>🧾</span> Request Final Bill
+                  <span>🧾</span>
+                  <span>Get Bill</span>
                 </button>
               </div>
             </div>
@@ -916,86 +756,76 @@ export default function App() {
         </div>
       )}
 
-      {/* Placed Order Success Modal */}
+      {/* Order Placed Receipt Modal */}
       {placedOrder && (
-        <div className="modal-backdrop">
-          <div className="receipt-modal">
-            <div className="receipt-check">✓</div>
-            <h2>Order Placed Successfully!</h2>
-            <p className="receipt-subtitle">Your order has been transmitted to Star Planet Kitchen.</p>
+        <div className="overlay-backdrop">
+          <div className="clean-modal-card receipt" onClick={e => e.stopPropagation()}>
+            <div className="receipt-success-badge">✓</div>
+            <h2>Order Placed!</h2>
+            <p className="receipt-subhead">Transmitted directly to Star Planet Kitchen.</p>
 
-            <div className="receipt-card">
-              <div className="receipt-row">
-                <span>Order Reference:</span>
+            <div className="receipt-details-box">
+              <div className="r-line">
+                <span>Order ID:</span>
                 <b>#{placedOrder.orderId}</b>
               </div>
-              <div className="receipt-row">
+              <div className="r-line">
                 <span>Table:</span>
-                <b className="table-highlight">Table {placedOrder.table}</b>
+                <b className="r-table-tag">Table {placedOrder.table}</b>
               </div>
-              <div className="receipt-row">
-                <span>Placed At:</span>
-                <span>{placedOrder.time}, {placedOrder.date}</span>
+              <div className="r-line">
+                <span>Time:</span>
+                <span>{placedOrder.time}</span>
               </div>
-              <div className="receipt-row">
+              <div className="r-line">
                 <span>Customer:</span>
-                <span>{placedOrder.customerName} ({placedOrder.customerPhone})</span>
-              </div>
-              <div className="receipt-row">
-                <span>Payment Mode:</span>
-                <span>{placedOrder.paymentMethod === 'UPI' ? 'UPI / QR at Table' : 'Cash at Counter'}</span>
+                <span>{placedOrder.customerName}</span>
               </div>
 
               {placedOrder.instructions && (
-                <div className="receipt-instructions">
-                  <small>Kitchen Note: "{placedOrder.instructions}"</small>
+                <div className="r-note">
+                  <small>Kitchen note: "{placedOrder.instructions}"</small>
                 </div>
               )}
 
-              <hr className="receipt-divider" />
-
-              <div className="receipt-items-list">
+              <div className="r-items-list">
                 {placedOrder.items.map(ci => (
-                  <div className="receipt-item" key={ci.item.id}>
+                  <div key={ci.item.id} className="r-item-row">
                     <span>{ci.quantity} × {ci.item.name}</span>
                     <span>₹{ci.item.price * ci.quantity}</span>
                   </div>
                 ))}
               </div>
 
-              <hr className="receipt-divider" />
-
-              <div className="receipt-row grand">
+              <div className="r-line r-grand">
                 <strong>Grand Total (incl. GST):</strong>
                 <strong>₹{placedOrder.total}</strong>
               </div>
             </div>
 
-            <div className="kitchen-progress">
-              <div className="step active">
-                <span className="dot"></span>
+            <div className="status-progress-track">
+              <div className="track-step done">
+                <span className="step-dot"></span>
                 <small>Received</small>
               </div>
-              <div className="progress-line active"></div>
-              <div className="step active">
-                <span className="dot"></span>
-                <small>Kitchen Preparing</small>
+              <div className="track-connector active"></div>
+              <div className="track-step active">
+                <span className="step-dot"></span>
+                <small>Preparing</small>
               </div>
-              <div className="progress-line"></div>
-              <div className="step">
-                <span className="dot"></span>
-                <small>Serve to Table</small>
+              <div className="track-connector"></div>
+              <div className="track-step">
+                <span className="step-dot"></span>
+                <small>Served</small>
               </div>
             </div>
 
-            <div className="receipt-actions">
-              <button
-                className="btn-primary full-width"
-                onClick={() => setPlacedOrder(null)}
-              >
-                + ORDER MORE DISHES
-              </button>
-            </div>
+            <button
+              className="primary-checkout-btn"
+              onClick={() => setPlacedOrder(null)}
+            >
+              + Order More Items
+            </button>
           </div>
         </div>
       )}
