@@ -1,0 +1,10 @@
+{
+  "name": "tableqr",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "npm run dev --prefix customer-app",
+    "dev": "npm run dev --prefix customer-app",
+    "build": "npm run build --prefix customer-app"
+  }
+}
