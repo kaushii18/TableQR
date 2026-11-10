@@ -1,23 +1,24 @@
 /* ==========================================================================
    ThreeUI Cinematic Perspective UI Component
-   Tactile 3D Stage with Star Portal Holographic Button & Floating Layers
+   Clean, Translucent Glass Stage with High-Contrast Star Planet Branding
    ========================================================================== */
 
 .cinematic-section {
   position: relative;
   width: 100%;
-  min-height: 85vh;
+  min-height: 88vh;
   overflow: hidden;
-  padding: 56px 16px 52px 16px;
+  padding: 44px 16px 40px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  /* Authentic High-Resolution Star Planet Restaurant Photo with Luxury Vignette */
+
+  /* Authentic High-Resolution Star Planet Restaurant Photo */
   background-color: #0d0c0a;
   background-image:
-    linear-gradient(180deg, rgba(10, 9, 7, 0.65) 0%, rgba(10, 9, 7, 0.78) 55%, #0d0c0a 100%),
+    linear-gradient(180deg, rgba(8, 7, 5, 0.6) 0%, rgba(8, 7, 5, 0.52) 40%, rgba(8, 7, 5, 0.85) 100%),
     url('https://lh3.googleusercontent.com/grass-cs/AABkmLe-nHGZ5CVn6lRnxlWy7ZIxEGS8AcdYa7SwJ26SB97DI3Zvavpgw8FAIglIdQeKjS_hN77st2m-Lvkpsi6gY9LxLQ4p4TGJyYFb1b0UuvjUAAbrpf1DNlzoJv_Zb3yfQNHa9JM=w1920-h1080-k-no');
   background-size: cover;
   background-position: center center;
@@ -25,9 +26,7 @@
   border-bottom: 1px solid rgba(214, 173, 97, 0.25);
 }
 
-/* --------------------------------------------------------------------------
-   Atmospheric Glow & Grid Backdrop
-   -------------------------------------------------------------------------- */
+/* Atmospheric Glow */
 .cinematic-backdrop {
   position: absolute;
   inset: 0;
@@ -39,102 +38,109 @@
 .cinematic-glow {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.28;
+  filter: blur(90px);
+  opacity: 0.24;
 }
 
 .cinematic-glow.gold {
-  width: 440px;
-  height: 440px;
+  width: 480px;
+  height: 480px;
   background: #d6ad61;
-  top: -80px;
+  top: -100px;
   left: 50%;
   transform: translateX(-50%);
 }
 
 .cinematic-glow.cyan {
-  width: 320px;
-  height: 320px;
+  width: 300px;
+  height: 300px;
   background: #0ea5e9;
   bottom: 0;
-  right: 15%;
-  opacity: 0.16;
-}
-
-.cinematic-grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(214, 173, 97, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(214, 173, 97, 0.05) 1px, transparent 1px);
-  background-size: 36px 36px;
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 20%, transparent 80%);
-  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 20%, transparent 80%);
+  right: 10%;
+  opacity: 0.14;
 }
 
 /* --------------------------------------------------------------------------
-   Header Eyebrow & Titles
+   Hero Branding Shield (Prominent & Razor-Sharp Visibility)
    -------------------------------------------------------------------------- */
-.cinematic-eyebrow {
+.hero-branding-shield {
   position: relative;
   z-index: 2;
+  max-width: 680px;
+  margin-bottom: 24px;
+  padding: 14px 20px;
+  background: rgba(10, 9, 8, 0.62);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(214, 173, 97, 0.35);
+  border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 24px rgba(214, 173, 97, 0.12);
+}
+
+.brand-crest {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-  justify-content: center;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
-.cinematic-star-badge {
-  background: rgba(214, 173, 97, 0.15);
-  border: 1px solid rgba(214, 173, 97, 0.4);
-  color: #f3cf88;
+.crest-star {
+  color: #d6ad61;
+  font-size: 13px;
+}
+
+.crest-kicker {
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 1.2px;
-  padding: 4px 12px;
-  border-radius: 9999px;
-  box-shadow: 0 0 16px rgba(214, 173, 97, 0.25);
+  letter-spacing: 2px;
+  color: #f3cf88;
+  text-transform: uppercase;
 }
 
-.cinematic-pill-info {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #c7c2b6;
+.brand-hero-title {
+  font-size: clamp(32px, 6vw, 48px);
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: #ffffff;
+  line-height: 1.08;
+  margin-bottom: 4px;
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.8), 0 0 28px rgba(214, 173, 97, 0.3);
+}
+
+.brand-hero-subtitle {
+  font-size: clamp(12px, 2.5vw, 15px);
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: #d6ad61;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.brand-chips-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.brand-chip {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #f0ece1;
   font-size: 11px;
   font-weight: 600;
-  padding: 4px 10px;
+  padding: 4px 12px;
   border-radius: 9999px;
+  backdrop-filter: blur(8px);
 }
 
-.cinematic-title {
-  position: relative;
-  z-index: 2;
-  font-size: clamp(26px, 5vw, 42px);
-  font-weight: 800;
-  line-height: 1.15;
-  color: #ffffff;
-  letter-spacing: -0.5px;
-  margin-bottom: 12px;
-  max-width: 680px;
-}
-
-.cinematic-title-gradient {
-  background: linear-gradient(135deg, #f3cf88 0%, #d6ad61 50%, #67e8f9 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  display: inline-block;
-}
-
-.cinematic-subtitle {
-  position: relative;
-  z-index: 2;
-  font-size: 14px;
-  color: #a39e93;
-  line-height: 1.5;
-  max-width: 520px;
-  margin-bottom: 30px;
+.brand-chip.highlight {
+  background: rgba(214, 173, 97, 0.2);
+  border-color: rgba(214, 173, 97, 0.5);
+  color: #f3cf88;
+  font-weight: 700;
 }
 
 /* --------------------------------------------------------------------------
@@ -147,8 +153,8 @@
   max-width: 540px;
   perspective: 1200px;
   perspective-origin: center center;
-  padding: 10px;
-  margin-bottom: 24px;
+  padding: 8px;
+  margin-bottom: 18px;
 }
 
 .perspective-card-group {
@@ -160,40 +166,41 @@
 }
 
 .perspective-card-group.floating {
-  animation: cinematicFloat 6s ease-in-out infinite alternate;
+  animation: cinematicGentleFloat 6s ease-in-out infinite alternate;
 }
 
-@keyframes cinematicFloat {
+@keyframes cinematicGentleFloat {
   0% {
-    transform: rotateX(7deg) rotateY(-8deg) translateY(0px);
+    transform: rotateX(5deg) rotateY(-6deg) translateY(0px);
   }
   50% {
-    transform: rotateX(4deg) rotateY(6deg) translateY(-8px);
+    transform: rotateX(3deg) rotateY(4deg) translateY(-6px);
   }
   100% {
-    transform: rotateX(9deg) rotateY(-6deg) translateY(0px);
+    transform: rotateX(6deg) rotateY(-4deg) translateY(0px);
   }
 }
 
 /* --------------------------------------------------------------------------
-   Main 3D Panel
+   Translucent Glass Card (Lets the Hotel Image Shine Through!)
    -------------------------------------------------------------------------- */
-.perspective-main-panel {
+.perspective-glass-card {
   position: relative;
-  background: linear-gradient(145deg, #181714 0%, #11100e 100%);
-  border: 1px solid rgba(214, 173, 97, 0.35);
+  background: rgba(16, 14, 11, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(214, 173, 97, 0.38);
   border-radius: 20px;
   box-shadow:
-    0 24px 60px rgba(0, 0, 0, 0.75),
+    0 24px 60px rgba(0, 0, 0, 0.65),
     0 0 1px 1px rgba(214, 173, 97, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
-  padding: 20px;
+  padding: 22px 20px;
   overflow: hidden;
   transform: translateZ(0);
 }
 
-/* Specular reflection sheen that moves with cursor */
-.panel-specular-sheen {
+.glass-specular-sheen {
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -206,283 +213,174 @@
   transition: opacity 0.2s ease;
 }
 
-.panel-header {
+/* Card Top: Table Status & Edit */
+.glass-card-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   margin-bottom: 16px;
 }
 
-.panel-brand {
+.table-live-indicator {
   display: flex;
   align-items: center;
-  gap: 10px;
-  text-align: left;
-}
-
-.panel-star {
-  font-size: 24px;
-  color: #d6ad61;
-}
-
-.panel-brand strong {
-  display: block;
-  font-size: 14px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  color: #fff;
-}
-
-.panel-brand small {
-  font-size: 10px;
-  color: #8c8574;
-}
-
-.panel-status-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(34, 197, 94, 0.12);
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  color: #4ade80;
-  font-size: 10px;
+  gap: 8px;
+  font-size: 12px;
   font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 9999px;
   letter-spacing: 0.5px;
+  color: #ffffff;
 }
 
-.status-live-dot {
-  width: 6px;
-  height: 6px;
+.table-live-indicator strong {
+  color: #f3cf88;
+}
+
+.live-status-dot {
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: #22c55e;
-  box-shadow: 0 0 8px #22c55e;
-  animation: pulseDot 2s infinite;
+  box-shadow: 0 0 10px #22c55e;
+  animation: pulseGreen 2s infinite;
 }
 
-@keyframes pulseDot {
+@keyframes pulseGreen {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.4; transform: scale(0.85); }
 }
 
-/* Panel Body - Featured Mockup */
-.panel-dish-preview {
-  background: radial-gradient(circle at 50% 30%, #2a251b 0%, #151411 100%);
-  border: 1px solid rgba(214, 173, 97, 0.2);
-  border-radius: 14px;
-  padding: 16px;
-  text-align: left;
-  margin-bottom: 16px;
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
-}
-
-.dish-tag {
-  display: inline-block;
-  background: rgba(214, 173, 97, 0.2);
-  color: #f3cf88;
+.table-change-glass-btn {
+  background: rgba(214, 173, 97, 0.16);
   border: 1px solid rgba(214, 173, 97, 0.4);
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.8px;
-  padding: 2px 7px;
-  border-radius: 4px;
-  margin-bottom: 8px;
+  color: #f3cf88;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.dish-title-wrap h3 {
-  font-size: 16px;
+.table-change-glass-btn:hover {
+  background: #d6ad61;
+  color: #0c0c0b;
+}
+
+/* Card Center Welcome */
+.glass-card-center h2 {
+  font-size: 20px;
   font-weight: 700;
   color: #ffffff;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
 }
 
-.dish-title-wrap p {
-  font-size: 12px;
-  color: #9c9586;
-  line-height: 1.35;
-  margin-bottom: 10px;
+.glass-card-center p {
+  font-size: 13px;
+  color: #d1ccbf;
+  line-height: 1.45;
+  margin-bottom: 16px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 
-.dish-meta-row {
+/* Card Perks Row */
+.glass-perks-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.dish-price-badge {
-  font-size: 18px;
-  font-weight: 800;
-  color: #f3cf88;
-}
-
-.dish-diet-pill {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 9999px;
-}
-
-.dish-diet-pill.nonveg {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  color: #f87171;
-}
-
-/* Panel Footer Perks */
-.panel-footer {
-  display: flex;
-  justify-content: space-between;
+  justify-content: space-around;
   gap: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  padding-top: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 10px 8px;
+  margin-bottom: 20px;
 }
 
-.panel-perk {
+.glass-perk-item {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 3px;
 }
 
-.panel-perk span {
-  font-size: 14px;
+.glass-perk-item span {
+  font-size: 16px;
 }
 
-.panel-perk small {
+.glass-perk-item small {
   font-size: 10px;
-  color: #8c8574;
+  color: #c7c2b6;
   font-weight: 600;
 }
 
-/* --------------------------------------------------------------------------
-   3D Floating Layers (Depth arranged by translateZ)
-   -------------------------------------------------------------------------- */
-.perspective-floating-layer {
-  position: absolute;
-  pointer-events: auto;
-  transform-style: preserve-3d;
-}
-
-.floating-card-pill {
+/* CTA Row */
+.glass-cta-row {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(24, 22, 18, 0.92);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(214, 173, 97, 0.4);
-  border-radius: 9999px;
-  padding: 8px 14px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), 0 0 16px rgba(214, 173, 97, 0.15);
-  text-align: left;
+  justify-content: center;
+  width: 100%;
 }
 
-.floating-card-pill b {
-  display: block;
-  font-size: 11px;
-  color: #ffffff;
-}
-
-.floating-card-pill small {
-  font-size: 9px;
-  color: #a39e93;
-}
-
-.floating-icon {
-  font-size: 16px;
-}
-
-.floating-icon.pulse {
-  animation: bellShake 3s ease-in-out infinite;
-}
-
-@keyframes bellShake {
-  0%, 100% { transform: rotate(0); }
-  10%, 30% { transform: rotate(12deg); }
-  20%, 40% { transform: rotate(-12deg); }
-  50% { transform: rotate(0); }
-}
-
-.layer-btn-small {
-  background: #d6ad61;
-  color: #0d0c0a;
-  border: none;
-  font-size: 10px;
-  font-weight: 800;
-  padding: 3px 8px;
-  border-radius: 9999px;
-  cursor: pointer;
-  margin-left: 4px;
-}
-
-/* Top-Right Floating Layer (Z: 48px) */
-.layer-table {
-  top: -14px;
-  right: -8px;
-  transform: translateZ(48px);
-}
-
-/* Bottom-Left Floating Layer (Z: 64px) */
-.layer-service {
-  bottom: 24px;
-  left: -12px;
-  transform: translateZ(64px);
-}
-
-/* Center Bottom Floating CTA (Z: 85px) */
-.layer-cta {
-  bottom: -22px;
-  left: 50%;
-  transform: translateX(-50%) translateZ(85px);
-  width: max-content;
-  max-width: 90%;
+.glass-cta-row button {
+  width: 100%;
+  max-width: 380px;
 }
 
 /* --------------------------------------------------------------------------
-   Bottom Skip / Jump to Menu
+   Jump to Menu Link
    -------------------------------------------------------------------------- */
-.cinematic-bottom-actions {
+.cinematic-jump-bar {
   position: relative;
   z-index: 2;
-  margin-top: 10px;
+  margin-top: 4px;
 }
 
-.cinematic-skip-btn {
-  background: transparent;
-  border: none;
-  color: #8c8574;
+.cinematic-jump-btn {
+  background: rgba(10, 9, 8, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #d1ccbf;
   font-size: 12px;
   font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 9999px;
   cursor: pointer;
-  transition: color 0.15s ease;
-  padding: 6px 12px;
+  transition: all 0.15s ease;
 }
 
-.cinematic-skip-btn:hover {
-  color: #d6ad61;
+.cinematic-jump-btn:hover {
+  border-color: #d6ad61;
+  color: #f3cf88;
 }
 
 /* --------------------------------------------------------------------------
-   Mobile Adaptations
+   Responsive Adaptations
    -------------------------------------------------------------------------- */
 @media (max-width: 480px) {
-  .layer-table {
-    top: -12px;
-    right: 4px;
-    transform: translateZ(36px);
+  .cinematic-section {
+    padding: 32px 14px 28px 14px;
+    min-height: auto;
   }
 
-  .layer-service {
-    display: none; /* Hide secondary layer on very small phones to prevent edge clipping */
+  .brand-hero-title {
+    font-size: 28px;
+    letter-spacing: 2px;
   }
 
-  .layer-cta {
-    bottom: -18px;
-    transform: translateX(-50%) translateZ(60px);
+  .brand-hero-subtitle {
+    font-size: 11px;
+    letter-spacing: 2px;
   }
 
-  .perspective-main-panel {
-    padding: 16px;
+  .perspective-glass-card {
+    padding: 16px 14px;
+  }
+
+  .glass-card-center h2 {
+    font-size: 17px;
+  }
+
+  .glass-card-center p {
+    font-size: 12px;
   }
 }

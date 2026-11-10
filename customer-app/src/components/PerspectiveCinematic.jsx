@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import StarPortalButton from './StarPortalButton'
 import './PerspectiveCinematic.css'
 
 export default function PerspectiveCinematic({ onEnterMenu, tableNumber, onOpenTableModal }) {
   const stageRef = useRef(null)
-  const [tilt, setTilt] = useState({ rx: 8, ry: -10, mx: 50, my: 50 })
+  const [tilt, setTilt] = useState({ rx: 6, ry: -8, mx: 50, my: 50 })
   const [isHovered, setIsHovered] = useState(false)
 
   // Mouse parallax tracking for cinematic 3D perspective
@@ -16,9 +16,8 @@ export default function PerspectiveCinematic({ onEnterMenu, tableNumber, onOpenT
     const px = x / rect.width
     const py = y / rect.height
 
-    // Calculate rotation angles (max +/- 14 degrees)
-    const ry = (px - 0.5) * 24
-    const rx = (0.5 - py) * 20
+    const ry = (px - 0.5) * 20
+    const rx = (0.5 - py) * 16
 
     setTilt({
       rx: Number(rx.toFixed(2)),
@@ -30,7 +29,7 @@ export default function PerspectiveCinematic({ onEnterMenu, tableNumber, onOpenT
 
   function handleMouseLeave() {
     setIsHovered(false)
-    setTilt({ rx: 6, ry: -8, mx: 50, my: 50 })
+    setTilt({ rx: 5, ry: -6, mx: 50, my: 50 })
   }
 
   function handleMouseEnter() {
@@ -39,32 +38,29 @@ export default function PerspectiveCinematic({ onEnterMenu, tableNumber, onOpenT
 
   return (
     <section className="cinematic-section">
-      {/* Background Ambient Glow & Star Grid */}
+      {/* Background Dimmer & Lighting */}
       <div className="cinematic-backdrop">
         <div className="cinematic-glow gold" />
         <div className="cinematic-glow cyan" />
-        <div className="cinematic-grid" />
       </div>
 
-      {/* Header Info */}
-      <div className="cinematic-eyebrow">
-        <span className="cinematic-star-badge">✦ STAR PLANET DIGITAL DINING</span>
-        <span className="cinematic-pill-info">
-          {tableNumber ? `Dine-In • Table ${tableNumber}` : 'QR Table Ordering'}
-        </span>
+      {/* Hero Branding Shield (Crisp, High-Contrast & Proudly Visible) */}
+      <div className="hero-branding-shield">
+        <div className="brand-crest">
+          <span className="crest-star">✦</span>
+          <span className="crest-kicker">VIRAR WEST'S PREMIER DINING DESTINATION</span>
+          <span className="crest-star">✦</span>
+        </div>
+        <h1 className="brand-hero-title">STAR PLANET</h1>
+        <p className="brand-hero-subtitle">FAMILY RESTAURANT & BAR</p>
+        <div className="brand-chips-row">
+          <span className="brand-chip">📍 Y K Nagar, Virar (W)</span>
+          <span className="brand-chip highlight">✨ Table Digital Ordering</span>
+          <span className="brand-chip">⏰ Open Till 1:30 AM</span>
+        </div>
       </div>
 
-      <h1 className="cinematic-title">
-        Experience Flavors.<br />
-        <span className="cinematic-title-gradient">Elevated in 3D Perspective.</span>
-      </h1>
-
-      <p className="cinematic-subtitle">
-        Scan, browse 380+ handcrafted Indian, Tandoori & Chinese delicacies,
-        and transmit your order straight to the kitchen.
-      </p>
-
-      {/* 3D Perspective Stage */}
+      {/* 3D Perspective Glass Stage (Translucent: Lets the Hotel Image Shine Through!) */}
       <div
         className="perspective-stage"
         ref={stageRef}
@@ -80,105 +76,76 @@ export default function PerspectiveCinematic({ onEnterMenu, tableNumber, onOpenT
             '--mouse-y': `${tilt.my}%`,
           }}
         >
-          {/* Main 3D Panel */}
-          <div className="perspective-main-panel">
-            <div className="panel-specular-sheen" />
-            
-            <div className="panel-header">
-              <div className="panel-brand">
-                <span className="panel-star">✦</span>
-                <div>
-                  <strong>STAR PLANET</strong>
-                  <small>Family Restaurant & Bar</small>
-                </div>
+          {/* Main Translucent Glass Card */}
+          <div className="perspective-glass-card">
+            <div className="glass-specular-sheen" />
+
+            <div className="glass-card-top">
+              <div className="table-live-indicator">
+                <span className="live-status-dot" />
+                <span>
+                  {tableNumber ? (
+                    <>
+                      DINING AT <strong>TABLE {tableNumber}</strong>
+                    </>
+                  ) : (
+                    'TABLE NOT SET'
+                  )}
+                </span>
               </div>
-              <span className="panel-status-chip">
-                <span className="status-live-dot" /> LIVE MENU
-              </span>
+
+              <button
+                type="button"
+                className="table-change-glass-btn"
+                onClick={onOpenTableModal}
+              >
+                {tableNumber ? 'Change Table ✏️' : 'Set Table #'}
+              </button>
             </div>
 
-            {/* Featured Dish Preview */}
-            <div className="panel-body">
-              <div className="panel-dish-preview">
-                <div className="dish-img-mock">
-                  <div className="dish-tag">👑 CHEF'S SIGNATURE</div>
-                  <div className="dish-title-wrap">
-                    <h3>Murgh Dum Biryani & Tandoori Kebab</h3>
-                    <p>Slow-cooked saffron basmati rice with charcoal-grilled spiced kebabs</p>
-                  </div>
-                  <div className="dish-meta-row">
-                    <span className="dish-price-badge">₹395</span>
-                    <span className="dish-diet-pill nonveg">Non-Veg</span>
-                  </div>
-                </div>
-              </div>
+            <div className="glass-card-center">
+              <h2>Welcome to Star Planet</h2>
+              <p>
+                Browse 380+ authentic North Indian curries, tandoori kebabs, Chinese wok
+                specialties, and refreshing bar drinks. Freshly prepared and delivered right to your table.
+              </p>
             </div>
 
-            <div className="panel-footer">
-              <div className="panel-perk">
+            {/* Quick Stats in a clean, non-obtrusive row */}
+            <div className="glass-perks-row">
+              <div className="glass-perk-item">
                 <span>⚡</span>
                 <small>Instant Kitchen Transmit</small>
               </div>
-              <div className="panel-perk">
-                <span>🍽️</span>
+              <div className="glass-perk-item">
+                <span>🥘</span>
                 <small>380+ Fresh Dishes</small>
               </div>
-              <div className="panel-perk">
+              <div className="glass-perk-item">
                 <span>🍸</span>
                 <small>Full Bar & Mocktails</small>
               </div>
             </div>
-          </div>
 
-          {/* Floating Layer 1 (Top-Right, Z: 48px) - Table Tracker */}
-          <div className="perspective-floating-layer layer-table">
-            <div className="floating-card-pill">
-              <span className="floating-icon">🪑</span>
-              <div>
-                <b>{tableNumber ? `Table ${tableNumber}` : 'Seated at Table?'}</b>
-                <small>{tableNumber ? 'Connected to Kitchen' : 'Tap to assign table'}</small>
-              </div>
-              {!tableNumber && (
-                <button
-                  type="button"
-                  className="layer-btn-small"
-                  onClick={onOpenTableModal}
-                >
-                  Set #
-                </button>
-              )}
+            {/* CTA Button nestled with 3D depth */}
+            <div className="glass-cta-row">
+              <StarPortalButton
+                size="hero"
+                startIcon="✦"
+                endIcon="➔"
+                onClick={onEnterMenu}
+              >
+                EXPLORE FULL MENU & ORDER
+              </StarPortalButton>
             </div>
-          </div>
-
-          {/* Floating Layer 2 (Bottom-Left, Z: 64px) - Service Call */}
-          <div className="perspective-floating-layer layer-service">
-            <div className="floating-card-pill">
-              <span className="floating-icon pulse">🔔</span>
-              <div>
-                <b>1-Tap Captain Call</b>
-                <small>Water • Cutlery • Bill</small>
-              </div>
-            </div>
-          </div>
-
-          {/* Floating Layer 3 (Z: 85px) - Star Portal Holographic Button */}
-          <div className="perspective-floating-layer layer-cta">
-            <StarPortalButton
-              size="hero"
-              startIcon="✦"
-              endIcon="➔"
-              onClick={onEnterMenu}
-            >
-              EXPLORE FULL MENU & ORDER
-            </StarPortalButton>
           </div>
         </div>
       </div>
 
-      {/* Quick Navigation Scroll cue */}
-      <div className="cinematic-bottom-actions">
-        <button className="cinematic-skip-btn" onClick={onEnterMenu}>
-          Jump Directly to Menu ({tableNumber ? `Table ${tableNumber}` : 'Browse'}) ↓
+      {/* Jump to Menu Quick Link */}
+      <div className="cinematic-jump-bar">
+        <button className="cinematic-jump-btn" onClick={onEnterMenu}>
+          View Full Menu Directly ({tableNumber ? `Table ${tableNumber}` : 'Browse Dishes'}) ↓
         </button>
       </div>
     </section>
