@@ -1,22 +1,9 @@
 import { useState, useMemo, useEffect } from 'react'
 import { categories, categoryMeta, menuItems } from './data/menuData'
-import { createOrder, createServiceRequest } from './lib/supabase'
+import { createOrder, createServiceRequest, isSupabaseConfigured, supabase } from './lib/supabase'
 import StarPortalButton from './components/StarPortalButton'
 import PerspectiveCinematic from './components/PerspectiveCinematic'
 import './App.css'
-
-const categoryCounts = {
-  'Soups & Salads': 34,
-  Starters: 75,
-  'Main Course': 8,
-  'Rice & Biryani': 30,
-  'Noodles & Fried Rice': 40,
-  'Breads & Rotis': 30,
-  'Pizza, Pasta & Sandwiches': 18,
-  'Bar Bites & Snacks': 34,
-  Desserts: 27,
-  'Beverages & Shakes': 10,
-}
 
 function getCategoryId(category) {
   return `cat-${category.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
@@ -29,6 +16,9 @@ export default function App() {
   const [showLanding, setShowLanding] = useState(true)
   const [tableModalOpen, setTableModalOpen] = useState(false)
   const [tempTableInput, setTempTableInput] = useState('')
+  const [visibleCategories, setVisibleCategories] = useState(categories)
+  const [visibleCategoryMeta, setVisibleCategoryMeta] = useState(categoryMeta)
+  const [visibleMenuItems, setVisibleMenuItems] = useState(menuItems)
 
   // Menu filters & search
   const [activeCategory, setActiveCategory] = useState('Soups & Salads')
@@ -60,9 +50,63 @@ export default function App() {
     setTimeout(() => setToastMessage(''), 2600)
   }
 
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return undefined
+
+    let active = true
+    async function loadPublishedMenu() {
+      const { data: settings, error: settingsError } = await supabase
+        .from('menu_settings').select('is_published').eq('singleton', true).maybeSingle()
+      if (settingsError) throw settingsError
+      if (!settings?.is_published) return
+
+      const [categoryResult, itemResult] = await Promise.all([
+        supabase.from('menu_categories').select('id,name,icon,description,display_order').order('display_order'),
+        supabase.from('menu_items').select('id,legacy_id,name,category_id,price,description,type,image,is_available,is_popular,is_chef_special,display_order').eq('is_available', true).order('display_order'),
+      ])
+      if (categoryResult.error) throw categoryResult.error
+      if (itemResult.error) throw itemResult.error
+      if (!itemResult.data?.length) return
+
+      const categoryById = new Map(categoryResult.data.map(category => [category.id, category]))
+      const nextCategories = ['All', ...categoryResult.data.map(category => category.name)]
+      const nextCategoryMeta = Object.fromEntries(categoryResult.data.map(category => [category.name, {
+        icon: category.icon || '🍽️',
+        desc: category.description || '',
+      }]))
+      const nextItems = itemResult.data.flatMap(item => {
+        const category = categoryById.get(item.category_id)
+        if (!category) return []
+        return [{
+          id: item.legacy_id ?? item.id,
+          name: item.name,
+          category: category.name,
+          price: Number(item.price),
+          description: item.description || '',
+          type: item.type || 'Veg',
+          image: item.image || '',
+          isPopular: Boolean(item.is_popular),
+          isChefSpecial: Boolean(item.is_chef_special),
+        }]
+      })
+
+      if (active) {
+        setVisibleCategories(nextCategories)
+        setVisibleCategoryMeta(nextCategoryMeta)
+        setVisibleMenuItems(nextItems)
+        setActiveCategory(nextCategories[1] || 'All')
+      }
+    }
+
+    loadPublishedMenu().catch(error => {
+      console.warn('Database menu unavailable; keeping the built-in customer menu.', error)
+    })
+    return () => { active = false }
+  }, [])
+
   // Filter menu items dynamically
   const filteredMenu = useMemo(() => {
-    return menuItems.filter(item => {
+    return visibleMenuItems.filter(item => {
       const matchDiet = dietFilter === 'All' || item.type === dietFilter
       const query = search.trim().toLowerCase()
       const matchSearch =
@@ -72,22 +116,29 @@ export default function App() {
         (item.description && item.description.toLowerCase().includes(query))
       return matchDiet && matchSearch
     })
-  }, [dietFilter, search])
+  }, [visibleMenuItems, dietFilter, search])
 
   const groupedMenu = useMemo(
     () =>
-      categories
+      visibleCategories
         .slice(1)
         .map(category => ({
           category,
           items: filteredMenu.filter(item => item.category === category),
         }))
         .filter(section => section.items.length > 0),
-    [filteredMenu],
+    [visibleCategories, filteredMenu],
   )
   const featuredItems = useMemo(
-    () => menuItems.filter(item => item.isChefSpecial).slice(0, 4),
-    [],
+    () => visibleMenuItems.filter(item => item.isChefSpecial).slice(0, 4),
+    [visibleMenuItems],
+  )
+  const visibleCategoryCounts = useMemo(
+    () => Object.fromEntries(visibleCategories.slice(1).map(category => [
+      category,
+      visibleMenuItems.filter(item => item.category === category).length,
+    ])),
+    [visibleCategories, visibleMenuItems],
   )
 
   function openMenu() {
@@ -396,8 +447,8 @@ export default function App() {
       {/* Sticky Categories Navigation Bar */}
       <nav className="category-nav-bar" aria-label="Menu categories">
         <div className="category-nav-scroll">
-          {categories.slice(1).map(cat => {
-            const meta = categoryMeta[cat] || { icon: '🍽️' }
+          {visibleCategories.slice(1).map(cat => {
+            const meta = visibleCategoryMeta[cat] || { icon: '🍽️' }
             const isSelected = activeCategory === cat
 
             return (
@@ -414,7 +465,7 @@ export default function App() {
               >
                 <span className="pill-icon">{meta.icon}</span>
                 <span className="pill-text">{cat}</span>
-                <span className="pill-count">{categoryCounts[cat]}</span>
+                <span className="pill-count">{visibleCategoryCounts[cat]}</span>
               </button>
             )
           })}
@@ -432,7 +483,7 @@ export default function App() {
           >
             <div className="category-group-header">
               <div className="cgh-left">
-                <span className="cgh-icon">{categoryMeta[category]?.icon || '🍽️'}</span>
+                <span className="cgh-icon">{visibleCategoryMeta[category]?.icon || '🍽️'}</span>
                 <h2>{category}</h2>
               </div>
               <span className="cgh-count">{items.length} items</span>
