@@ -39,15 +39,35 @@ export default function Orders() {
 
   useEffect(() => {
     let active = true
+    let refreshInProgress = false
+    async function refreshOrders() {
+      if (refreshInProgress) return
+      refreshInProgress = true
+      try {
+        await load()
+        if (active) setError('')
+      } catch (loadError) {
+        console.error('Could not load or refresh Supabase orders:', loadError)
+        if (active) setError(loadError.message || 'Could not load orders. Please try again.')
+      } finally {
+        refreshInProgress = false
+      }
+    }
+
     // Load initial data from Supabase; the updates are asynchronous external data.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    load().catch(loadError => active && setError(loadError.message || 'Could not load orders.')).finally(() => active && setLoading(false))
+    refreshOrders().finally(() => active && setLoading(false))
     const channel = requireSupabase().channel('admin-orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        load().catch(loadError => active && setError(loadError.message || 'Could not refresh orders.'))
-      }).subscribe()
+        refreshOrders()
+      }).subscribe((status, subscriptionError) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          console.warn('Order Realtime subscription unavailable; periodic refresh remains active:', subscriptionError || status)
+        }
+      })
+    const pollId = window.setInterval(refreshOrders, 30_000)
     return () => {
       active = false
+      window.clearInterval(pollId)
       requireSupabase().removeChannel(channel)
     }
   }, [load])
@@ -70,12 +90,22 @@ export default function Orders() {
     setSavingId(order.id)
     setError('')
     try {
-      const { error: updateError } = await requireSupabase().from('orders').update({ status: nextStatus }).eq('id', order.id)
+      const { data, error: updateError } = await requireSupabase()
+        .from('orders')
+        .update({ status: nextStatus })
+        .eq('id', order.id)
+        .select('id')
+        .maybeSingle()
       if (updateError) throw updateError
+      if (!data) throw new Error('Order was not updated. It may no longer be available.')
       const updated = { ...order, status: nextStatus }
       setOrders(current => current.map(item => item.id === order.id ? updated : item))
       setSelected(current => current?.id === order.id ? updated : current)
     } catch (updateError) {
+      console.error('Could not update Supabase order status:', updateError, {
+        orderId: order.id,
+        nextStatus,
+      })
       setError(updateError.message || 'Could not update order status.')
     } finally {
       setSavingId('')
@@ -86,7 +116,7 @@ export default function Orders() {
 
   return (
     <>
-      <PageHeader eyebrow="FRONT OF HOUSE" title="Orders" description="Monitor incoming tickets and keep every table moving." action={<button className="button button-quiet" onClick={() => { setLoading(true); load().catch(loadError => setError(loadError.message)).finally(() => setLoading(false)) }}>↻ Refresh</button>} />
+      <PageHeader eyebrow="FRONT OF HOUSE" title="Orders" description="Monitor incoming tickets and keep every table moving." action={<button className="button button-quiet" onClick={() => { setLoading(true); load().catch(loadError => { console.error('Could not refresh Supabase orders:', loadError); setError(loadError.message || 'Could not refresh orders.') }).finally(() => setLoading(false)) }}>↻ Refresh</button>} />
       {error && <Notice tone="error">{error}</Notice>}
       <section className="orders-toolbar">
         <label className="search-field"><span>⌕</span><input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search order, customer or phone" /></label>

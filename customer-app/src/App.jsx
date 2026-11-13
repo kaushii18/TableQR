@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { categories, categoryMeta, menuItems } from './data/menuData'
 import { createOrder, createServiceRequest, isSupabaseConfigured, supabase } from './lib/supabase'
 import StarPortalButton from './components/StarPortalButton'
@@ -40,6 +40,9 @@ export default function App() {
 
   // Order state
   const [placedOrder, setPlacedOrder] = useState(null)
+  const [orderSubmitting, setOrderSubmitting] = useState(false)
+  const [orderError, setOrderError] = useState('')
+  const orderSubmittingRef = useRef(false)
 
   // Service / Waiter Call state
   const [serviceModalOpen, setServiceModalOpen] = useState(false)
@@ -210,6 +213,7 @@ export default function App() {
 
   async function handlePlaceOrder(e) {
     e.preventDefault()
+    if (orderSubmittingRef.current) return
 
     if (!tableNumber) {
       setCheckoutOpen(false)
@@ -219,11 +223,15 @@ export default function App() {
       return
     }
 
+    orderSubmittingRef.current = true
+    setOrderSubmitting(true)
+    setOrderError('')
+
     const orderData = {
       orderId: 'SP' + Math.floor(100000 + Math.random() * 900000),
-      table: tableNumber,
-      customerName: customer.name,
-      customerPhone: customer.phone,
+      table: tableNumber.trim(),
+      customerName: customer.name.trim(),
+      customerPhone: customer.phone.trim(),
       paymentMethod: customer.paymentMethod,
       items: [...cart],
       instructions: specialInstructions,
@@ -234,12 +242,25 @@ export default function App() {
       date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
     }
 
-    await createOrder(orderData)
-    setPlacedOrder(orderData)
-    setCart([])
-    setSpecialInstructions('')
-    setCheckoutOpen(false)
-    setCartOpen(false)
+    try {
+      const result = await createOrder(orderData)
+      if (!result.success) {
+        setOrderError(result.message || 'We could not save your order. Please try again.')
+        return
+      }
+
+      setPlacedOrder(orderData)
+      setCart([])
+      setSpecialInstructions('')
+      setCheckoutOpen(false)
+      setCartOpen(false)
+    } catch (error) {
+      console.error('Order submission failed:', error)
+      setOrderError('We could not save your order. Please check your connection and try again.')
+    } finally {
+      orderSubmittingRef.current = false
+      setOrderSubmitting(false)
+    }
   }
 
   async function handleCallWaiter(serviceType) {
@@ -815,8 +836,9 @@ export default function App() {
                 <b>₹{grandTotal}</b>
               </div>
 
-              <button type="submit" className="primary-checkout-btn">
-                Send Order to Kitchen ➔
+              {orderError && <p className="order-error-message" role="alert">{orderError}</p>}
+              <button type="submit" className="primary-checkout-btn" disabled={orderSubmitting}>
+                {orderSubmitting ? 'Sending order…' : 'Send Order to Kitchen ➔'}
               </button>
             </div>
           </form>

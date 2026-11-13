@@ -20,53 +20,68 @@ const localChannel = typeof window !== 'undefined' && 'BroadcastChannel' in wind
   : null
 
 /**
- * Save an order to Supabase (if configured) or localStorage
+ * Insert an order into Supabase. Customer inserts must not request a returned row,
+ * because SELECT access is restricted to administrators by the orders RLS policy.
  */
 export async function createOrder(orderData) {
-  // Always persist locally in localStorage for offline resilience
+  if (!isSupabaseConfigured || !supabase) {
+    return {
+      success: false,
+      message: 'Online ordering is temporarily unavailable. Please ask restaurant staff for help.',
+    }
+  }
+
+  const items = orderData.items.map(({ item, quantity }) => ({
+    id: item.id,
+    name: item.name,
+    price: Number(item.price),
+    quantity: Number(quantity),
+  }))
+  const payload = {
+    order_number: String(orderData.orderId).trim(),
+    table_number: String(orderData.table).trim(),
+    customer_name: String(orderData.customerName).trim(),
+    customer_phone: String(orderData.customerPhone).trim(),
+    items,
+    instructions: orderData.instructions || '',
+    subtotal: Number(orderData.subtotal),
+    tax: Number(orderData.tax),
+    total: Number(orderData.total),
+    payment_method: orderData.paymentMethod,
+    status: 'received',
+  }
+
+  const amounts = [payload.subtotal, payload.tax, payload.total]
+  const validItems = Array.isArray(payload.items) && payload.items.length > 0 &&
+    payload.items.every(item => item.name && Number.isFinite(item.price) && item.price >= 0 &&
+      Number.isInteger(item.quantity) && item.quantity > 0)
+  if (!payload.order_number || !payload.table_number || !payload.customer_name ||
+      !payload.customer_phone || !payload.payment_method || !validItems ||
+      amounts.some(amount => !Number.isFinite(amount) || amount < 0)) {
+    const error = new Error('Order details are incomplete or invalid.')
+    console.error('Order payload validation failed:', error, payload)
+    return { success: false, error, message: 'Please check your order details and try again.' }
+  }
+
   try {
-    const existing = JSON.parse(localStorage.getItem('starplanet_all_orders') || '[]')
-    localStorage.setItem('starplanet_all_orders', JSON.stringify([orderData, ...existing]))
-    localStorage.setItem('starplanet_active_order', JSON.stringify(orderData))
-
-    if (localChannel) {
-      localChannel.postMessage({ type: 'NEW_ORDER', order: orderData })
-    }
-  } catch (err) {
-    console.warn('LocalStorage save failed:', err)
-  }
-
-  // If Supabase is active, push to remote database
-  if (isSupabaseConfigured && supabase) {
-    try {
-      const { data, error } = await supabase.from('orders').insert([
-        {
-          order_number: orderData.orderId,
-          table_number: String(orderData.table),
-          customer_name: orderData.customerName,
-          customer_phone: orderData.customerPhone,
-          items: orderData.items,
-          instructions: orderData.instructions || '',
-          subtotal: orderData.subtotal,
-          tax: orderData.tax,
-          total: orderData.total,
-          payment_method: orderData.paymentMethod,
-          status: 'received',
-        }
-      ]).select()
-
-      if (error) {
-        console.error('Supabase order insert error:', error)
-        return { success: false, error, localOnly: true }
+    const { error } = await supabase.from('orders').insert(payload)
+    if (error) {
+      console.error('Supabase order insert error:', error, { orderNumber: payload.order_number })
+      return {
+        success: false,
+        error,
+        message: 'We could not save your order. Please check your connection and try again.',
       }
-      return { success: true, data: data[0] }
-    } catch (err) {
-      console.error('Supabase request failed:', err)
-      return { success: false, error: err, localOnly: true }
+    }
+    return { success: true }
+  } catch (error) {
+    console.error('Supabase order request failed:', error, { orderNumber: payload.order_number })
+    return {
+      success: false,
+      error,
+      message: 'We could not save your order. Please check your connection and try again.',
     }
   }
-
-  return { success: true, localOnly: true }
 }
 
 /**
@@ -113,39 +128,34 @@ export async function createServiceRequest(tableNumber, serviceType) {
  * Fetch all orders for kitchen / manager dashboard
  */
 export async function getLiveOrders() {
-  if (isSupabaseConfigured && supabase) {
-    try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false })
-      if (!error && data) {
-        return data.map(o => ({
-          orderId: o.order_number,
-          table: o.table_number,
-          customerName: o.customer_name,
-          customerPhone: o.customer_phone,
-          items: o.items,
-          instructions: o.instructions,
-          subtotal: o.subtotal,
-          tax: o.tax,
-          total: o.total,
-          paymentMethod: o.payment_method,
-          status: o.status,
-          time: new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          date: new Date(o.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
-        }))
-      }
-    } catch (err) {
-      console.warn('Supabase fetch failed, falling back to local:', err)
-    }
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error('Supabase is not configured; live orders are unavailable.')
   }
 
-  // Fallback to localStorage
   try {
-    return JSON.parse(localStorage.getItem('starplanet_all_orders') || '[]')
-  } catch {
-    return []
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return data.map(o => ({
+      orderId: o.order_number,
+      table: o.table_number,
+      customerName: o.customer_name,
+      customerPhone: o.customer_phone,
+      items: o.items,
+      instructions: o.instructions,
+      subtotal: o.subtotal,
+      tax: o.tax,
+      total: o.total,
+      paymentMethod: o.payment_method,
+      status: o.status,
+      time: new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      date: new Date(o.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+    }))
+  } catch (error) {
+    console.error('Supabase order fetch failed:', error)
+    throw error
   }
 }
 
@@ -153,33 +163,22 @@ export async function getLiveOrders() {
  * Update order status (received -> preparing -> served -> completed)
  */
 export async function updateOrderStatus(orderId, newStatus) {
-  // Update locally
-  try {
-    const all = JSON.parse(localStorage.getItem('starplanet_all_orders') || '[]')
-    const updated = all.map(o => o.orderId === orderId ? { ...o, status: newStatus } : o)
-    localStorage.setItem('starplanet_all_orders', JSON.stringify(updated))
-
-    const active = JSON.parse(localStorage.getItem('starplanet_active_order') || 'null')
-    if (active && active.orderId === orderId) {
-      localStorage.setItem('starplanet_active_order', JSON.stringify({ ...active, status: newStatus }))
-    }
-
-    if (localChannel) {
-      localChannel.postMessage({ type: 'STATUS_UPDATE', orderId, status: newStatus })
-    }
-  } catch (err) {
-    console.warn('Local update error:', err)
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error('Supabase is not configured; order status was not updated.')
   }
 
-  // Update in Supabase
-  if (isSupabaseConfigured && supabase) {
-    try {
-      await supabase
-        .from('orders')
-        .update({ status: newStatus })
-        .eq('order_number', orderId)
-    } catch (err) {
-      console.error('Supabase update status failed:', err)
-    }
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .update({ status: newStatus })
+      .eq('order_number', orderId)
+      .select('order_number')
+      .maybeSingle()
+    if (error) throw error
+    if (!data) throw new Error(`Order ${orderId} was not found or could not be updated.`)
+    return { success: true, data }
+  } catch (error) {
+    console.error('Supabase order status update failed:', error, { orderNumber: orderId, newStatus })
+    throw error
   }
 }

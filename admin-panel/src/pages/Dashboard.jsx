@@ -47,16 +47,35 @@ export default function Dashboard() {
 
   useEffect(() => {
     let active = true
+    let refreshInProgress = false
+    async function refreshDashboard() {
+      if (refreshInProgress) return
+      refreshInProgress = true
+      try {
+        await load()
+      } catch (loadError) {
+        console.error('Could not load or refresh dashboard orders:', loadError)
+        if (active) setError(loadError.message || 'Could not refresh dashboard data.')
+      } finally {
+        refreshInProgress = false
+      }
+    }
+
     // Load initial data from Supabase; the updates are asynchronous external data.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    load().catch(loadError => active && setError(loadError.message || 'Could not load dashboard data.')).finally(() => active && setLoading(false))
+    refreshDashboard().finally(() => active && setLoading(false))
     const channel = requireSupabase().channel('admin-dashboard-orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        load().catch(loadError => active && setError(loadError.message || 'Could not refresh dashboard data.'))
+        refreshDashboard()
       })
-      .subscribe()
+      .subscribe((status, subscriptionError) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          console.warn('Dashboard order Realtime subscription unavailable; periodic refresh remains active:', subscriptionError || status)
+        }
+      })
+    const pollId = window.setInterval(refreshDashboard, 30_000)
     return () => {
       active = false
+      window.clearInterval(pollId)
       requireSupabase().removeChannel(channel)
     }
   }, [load])

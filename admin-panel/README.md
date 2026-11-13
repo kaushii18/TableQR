@@ -39,7 +39,7 @@ Separate restaurant operations app for Star Planet Family Restaurant & Bar. The 
 ## Features
 
 - Password login, persisted Supabase session, admin role check, protected pages, and logout. Public signup is not provided.
-- Live order and service-request updates through Supabase Realtime.
+- Order pages update through Supabase Realtime with a 30-second polling fallback; service requests update through Realtime.
 - Order search, status/date filters, order detail, totals, and status updates.
 - Menu item and category CRUD, category ordering, item availability, and safe category deletion checks.
 - Restaurant table CRUD and downloadable QR PNGs using the customer app's existing `?table=...` URL behavior.
