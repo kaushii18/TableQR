@@ -11,10 +11,12 @@ import Categories from './pages/Categories'
 import Tables from './pages/Tables'
 import ServiceRequests from './pages/ServiceRequests'
 import Settings from './pages/Settings'
+import Payments from './pages/Payments'
 
 const navigation = [
   { to: '/', label: 'Overview', icon: '◫', end: true },
   { to: '/orders', label: 'Orders', icon: '▤' },
+  { to: '/payments', label: 'Payments', icon: '₹' },
   { to: '/menu', label: 'Menu', icon: '◉' },
   { to: '/categories', label: 'Categories', icon: '▦' },
   { to: '/tables', label: 'Tables & QR', icon: '⌗' },
@@ -70,7 +72,7 @@ function LoginPage() {
             {busy ? 'Signing in…' : 'Sign in securely'}
           </button>
         </form>
-        <p className="login-footnote">Admin access is granted by your Supabase database role. Public registration is disabled.</p>
+        <p className="login-footnote">Staff access is assigned through Supabase roles and permissions. Public registration is disabled.</p>
       </section>
     </main>
   )
@@ -91,8 +93,8 @@ function AccessDenied() {
       <div className="access-denied-card">
         <span className="empty-icon">!</span>
         <p className="eyebrow">ACCESS RESTRICTED</p>
-        <h1>This account is not an administrator.</h1>
-        <p>Your login succeeded, but Supabase did not grant this account the admin role.</p>
+        <h1>This account is not authorized for this workspace.</h1>
+        <p>Your login succeeded, but Supabase has not granted this account the required access.</p>
         {authError && <Notice tone="error">{authError}</Notice>}
         {signOutError && <Notice tone="error">{signOutError}</Notice>}
         <button className="button button-primary" onClick={handleSignOut}>Sign out</button>
@@ -102,7 +104,7 @@ function AccessDenied() {
 }
 
 function AdminLayout() {
-  const { user, signOut } = useAuth()
+  const { user, signOut, isAdmin } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const [error, setError] = useState('')
 
@@ -127,7 +129,7 @@ function AdminLayout() {
         </Link>
         <p className="nav-caption">WORKSPACE</p>
         <nav className="side-nav">
-          {navigation.map(item => (
+          {navigation.filter(item => isAdmin || item.to === '/payments').map(item => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -167,29 +169,34 @@ function AdminLayout() {
   )
 }
 
-function RouteGate({ children }) {
-  const { user, isAdmin, loading, error } = useAuth()
+function RouteGate({ children, required = 'admin' }) {
+  const { user, isAdmin, canConfirmPayments, loading, error } = useAuth()
   if (loading) return <Loading label="Verifying your session…" />
   if (!user) return <Navigate to="/login" replace />
-  if (error || !isAdmin) return <AccessDenied />
+  const authorized = required === 'payments'
+    ? isAdmin || canConfirmPayments
+    : isAdmin
+  if (error || !authorized) return <AccessDenied />
   return children
 }
 
 function RouteTree() {
-  const { user, isAdmin, loading } = useAuth()
+  const { user, isAdmin, canConfirmPayments, loading } = useAuth()
   if (loading) return <Loading label="Verifying your session…" />
+  const canAccessWorkspace = isAdmin || canConfirmPayments
 
   return (
     <Routes>
-      <Route path="/login" element={user && isAdmin ? <Navigate to="/" replace /> : <LoginPage />} />
-      <Route path="/" element={user ? (isAdmin ? <AdminLayout /> : <RouteGate><AdminLayout /></RouteGate>) : <Navigate to="/login" replace />}>
-        <Route index element={<Dashboard />} />
-        <Route path="orders" element={<Orders />} />
-        <Route path="menu" element={<Menu />} />
-        <Route path="categories" element={<Categories />} />
-        <Route path="tables" element={<Tables />} />
-        <Route path="service-requests" element={<ServiceRequests />} />
-        <Route path="settings" element={<Settings />} />
+      <Route path="/login" element={user && canAccessWorkspace ? <Navigate to="/" replace /> : <LoginPage />} />
+      <Route path="/" element={user ? (canAccessWorkspace ? <AdminLayout /> : <RouteGate><AdminLayout /></RouteGate>) : <Navigate to="/login" replace />}>
+        <Route index element={<RouteGate><Dashboard /></RouteGate>} />
+        <Route path="orders" element={<RouteGate><Orders /></RouteGate>} />
+        <Route path="payments" element={<RouteGate required="payments"><Payments /></RouteGate>} />
+        <Route path="menu" element={<RouteGate><Menu /></RouteGate>} />
+        <Route path="categories" element={<RouteGate><Categories /></RouteGate>} />
+        <Route path="tables" element={<RouteGate><Tables /></RouteGate>} />
+        <Route path="service-requests" element={<RouteGate><ServiceRequests /></RouteGate>} />
+        <Route path="settings" element={<RouteGate><Settings /></RouteGate>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

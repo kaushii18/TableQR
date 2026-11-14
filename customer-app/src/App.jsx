@@ -35,7 +35,7 @@ export default function App() {
   const [customer, setCustomer] = useState({
     name: '',
     phone: '',
-    paymentMethod: 'UPI',
+    paymentMethod: 'UPI Online',
   })
 
   // Order state
@@ -808,25 +808,35 @@ export default function App() {
               <div className="input-field-group">
                 <label>Payment Mode</label>
                 <div className="payment-radio-group">
-                  <label className={`pay-chip ${customer.paymentMethod === 'UPI' ? 'selected' : ''}`}>
+                  <label className={`pay-chip ${customer.paymentMethod === 'UPI Online' ? 'selected' : ''}`}>
                     <input
                       type="radio"
                       name="payment"
-                      value="UPI"
-                      checked={customer.paymentMethod === 'UPI'}
-                      onChange={() => setCustomer({ ...customer, paymentMethod: 'UPI' })}
+                      value="UPI Online"
+                      checked={customer.paymentMethod === 'UPI Online'}
+                      onChange={() => setCustomer({ ...customer, paymentMethod: 'UPI Online' })}
                     />
-                    <span>📲 UPI / Online at Table</span>
+                    <span>📲 UPI Online (verify with staff)</span>
                   </label>
-                  <label className={`pay-chip ${customer.paymentMethod === 'Counter' ? 'selected' : ''}`}>
+                  <label className={`pay-chip ${customer.paymentMethod === 'Pay at Counter' ? 'selected' : ''}`}>
                     <input
                       type="radio"
                       name="payment"
-                      value="Counter"
-                      checked={customer.paymentMethod === 'Counter'}
-                      onChange={() => setCustomer({ ...customer, paymentMethod: 'Counter' })}
+                      value="Pay at Counter"
+                      checked={customer.paymentMethod === 'Pay at Counter'}
+                      onChange={() => setCustomer({ ...customer, paymentMethod: 'Pay at Counter' })}
                     />
-                    <span>💵 Cash / Card at Counter</span>
+                    <span>💵 Pay at Counter</span>
+                  </label>
+                  <label className={`pay-chip ${customer.paymentMethod === 'Pay After Eating' ? 'selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="payment"
+                      value="Pay After Eating"
+                      checked={customer.paymentMethod === 'Pay After Eating'}
+                      onChange={() => setCustomer({ ...customer, paymentMethod: 'Pay After Eating' })}
+                    />
+                    <span>🍽️ Pay After Eating</span>
                   </label>
                 </div>
               </div>
@@ -958,6 +968,10 @@ export default function App() {
               <div className="r-line">
                 <span>Customer:</span>
                 <span>{placedOrder.customerName}</span>
+              </div>
+              <div className="r-line">
+                <span>Payment:</span>
+                <span>{placedOrder.paymentMethod} · Unpaid</span>
               </div>
 
               {placedOrder.instructions && (

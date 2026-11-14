@@ -157,7 +157,7 @@ function OrderDetails({ order, onClose, onStatusChange, saving }) {
       <div className="order-detail-meta">
         <div><small>CUSTOMER</small><strong>{order.customer_name || 'Guest'}</strong><span>{order.customer_phone || 'No phone provided'}</span></div>
         <div><small>TABLE</small><strong>Table {order.table_number}</strong><span>{formatDate(order.created_at)}</span></div>
-        <div><small>PAYMENT</small><strong>{order.payment_method || 'Not specified'}</strong><span><StatusBadge status={order.status} /></span></div>
+        <div><small>PAYMENT</small><strong>{order.payment_method || 'Not specified'}</strong><span><StatusBadge status={order.payment_status || 'not_recorded'} /></span></div>
       </div>
       <h3 className="detail-section-title">Items ordered</h3>
       {items.length ? <div className="order-items">{items.map((item, index) => {

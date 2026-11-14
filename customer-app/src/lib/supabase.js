@@ -48,6 +48,7 @@ export async function createOrder(orderData) {
     tax: Number(orderData.tax),
     total: Number(orderData.total),
     payment_method: orderData.paymentMethod,
+    payment_status: 'unpaid',
     status: 'received',
   }
 
@@ -56,7 +57,9 @@ export async function createOrder(orderData) {
     payload.items.every(item => item.name && Number.isFinite(item.price) && item.price >= 0 &&
       Number.isInteger(item.quantity) && item.quantity > 0)
   if (!payload.order_number || !payload.table_number || !payload.customer_name ||
-      !payload.customer_phone || !payload.payment_method || !validItems ||
+      !payload.customer_phone ||
+      !['UPI Online', 'Pay at Counter', 'Pay After Eating'].includes(payload.payment_method) ||
+      payload.payment_status !== 'unpaid' || !validItems ||
       amounts.some(amount => !Number.isFinite(amount) || amount < 0)) {
     const error = new Error('Order details are incomplete or invalid.')
     console.error('Order payload validation failed:', error, payload)

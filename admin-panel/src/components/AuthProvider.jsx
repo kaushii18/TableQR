@@ -5,6 +5,7 @@ import { AuthContext } from './auth-context'
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [canConfirmPayments, setCanConfirmPayments] = useState(false)
   const [loading, setLoading] = useState(isSupabaseConfigured)
   const [error, setError] = useState('')
 
@@ -18,6 +19,7 @@ export function AuthProvider({ children }) {
       if (!active) return
       setSession(nextSession)
       setIsAdmin(false)
+      setCanConfirmPayments(false)
       setError('')
       if (!nextSession?.user) {
         setLoading(false)
@@ -27,7 +29,7 @@ export function AuthProvider({ children }) {
 
       const { data, error: roleError } = await client
         .from('admin_users')
-        .select('user_id')
+        .select('user_id,role,can_confirm_payments')
         .eq('user_id', nextSession.user.id)
         .maybeSingle()
 
@@ -35,7 +37,10 @@ export function AuthProvider({ children }) {
       if (roleError) {
         setError(`Could not verify admin access: ${roleError.message}`)
       } else {
-        setIsAdmin(Boolean(data))
+        setIsAdmin(data?.role === 'admin')
+        setCanConfirmPayments(Boolean(
+          data && (data.role === 'admin' || data.role === 'manager' || data.can_confirm_payments),
+        ))
       }
       setLoading(false)
     }
@@ -65,6 +70,7 @@ export function AuthProvider({ children }) {
     session,
     user: session?.user ?? null,
     isAdmin,
+    canConfirmPayments,
     loading,
     error,
     signIn: async (email, password) => {
@@ -77,7 +83,7 @@ export function AuthProvider({ children }) {
       const { error: signOutError } = await requireSupabase().auth.signOut()
       if (signOutError) throw signOutError
     },
-  }), [session, isAdmin, loading, error])
+  }), [session, isAdmin, canConfirmPayments, loading, error])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

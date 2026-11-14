@@ -18,15 +18,15 @@ export default function Settings() {
           </div>
         </Panel>
         <Panel title="Administrator access">
-          <p className="panel-copy">Admin access requires an authenticated Supabase user whose ID is present in <code>public.admin_users</code>. Create staff accounts using Supabase Auth; there is no public signup form.</p>
-          <p className="panel-copy">The database migration adds an admin-role table and RLS policies. Review the migration and its effects before running it in Supabase.</p>
+          <p className="panel-copy">Staff access requires an authenticated Supabase user whose ID is present in <code>public.admin_users</code>. Admins manage the workspace; managers can access payments, and staff need explicit payment-confirmation permission.</p>
+          <p className="panel-copy">Payment confirmation is enforced by a Supabase function and database permissions, not frontend role checks alone. Review both migrations before applying them.</p>
         </Panel>
         <Panel title="Database setup">
           <div className="setup-checklist">
             <p><span>01</span> Configure <code>admin-panel/.env</code> with the shared project URL and public key.</p>
-            <p><span>02</span> Review <code>supabase/migrations/20261111_admin_panel.sql</code>.</p>
+            <p><span>02</span> Review <code>supabase/migrations/20261111_admin_panel.sql</code> and <code>supabase/migrations/20261114_payment_management.sql</code>.</p>
             <p><span>03</span> Approve and apply the SQL manually in Supabase. This app never runs migrations.</p>
-            <p><span>04</span> Create a staff user in Supabase Auth and insert that user ID into <code>public.admin_users</code>.</p>
+            <p><span>04</span> Create users in Supabase Auth and assign each role and any payment permission in <code>public.admin_users</code>.</p>
             <p><span>05</span> Import the existing customer menu from the <Link to="/menu">Menu page</Link>.</p>
           </div>
         </Panel>
