@@ -12,16 +12,18 @@ Separate restaurant operations app for Star Planet Family Restaurant & Bar. The 
    ```
 
 2. Copy `.env.example` to `.env` and set the existing Supabase project URL and **public anon/publishable key**. Set `VITE_CUSTOMER_APP_URL` to the customer app origin (defaults to `http://localhost:5173` for local development).
-3. Review `../supabase/migrations/20261111_admin_panel.sql`. It has **not** been run. Apply it manually in Supabase only after approving the policy and schema changes described below.
-4. Create an email/password staff user in Supabase Auth. After applying the migration, grant that user the admin role using the Supabase SQL editor:
+3. Apply `../supabase/migrations/20261111_admin_panel.sql` in the Supabase SQL editor if it has not already been applied. Review its policy and schema changes below before running it.
+4. Apply `../supabase/migrations/20261114_payment_management.sql` after the admin-panel migration. The admin-panel migration initially creates `admin_users` with only `user_id` and `created_at`; the payment migration adds `role` and `can_confirm_payments`, which the admin app requires. It promotes existing `admin_users` entries to `admin` and makes future entries default to `staff`. Do not replace this with a frontend fallback: access checks must fail closed if the authorization schema is unavailable.
+5. Create an email/password user in Supabase Auth. To grant that specific account admin access (or restore it if it was not already in `admin_users` when the payment migration ran), use the Supabase SQL editor:
 
    ```sql
-   INSERT INTO public.admin_users (user_id)
-   SELECT id FROM auth.users WHERE email = 'admin@example.com';
+   INSERT INTO public.admin_users (user_id, role)
+   SELECT id, 'admin' FROM auth.users WHERE email = 'admin@example.com'
+   ON CONFLICT (user_id) DO UPDATE SET role = EXCLUDED.role;
    ```
 
-   Replace the example email with the staff account's email. Do not expose a service-role key in the browser.
-5. Start the customer app in one terminal and the admin app in another:
+   Replace the example email with the authorized staff account's email. Only assign `admin` to accounts that should manage the workspace. Do not expose a service-role key in the browser.
+6. Start the customer app in one terminal and the admin app in another:
 
    ```powershell
    cd customer-app
@@ -34,7 +36,7 @@ Separate restaurant operations app for Star Planet Family Restaurant & Bar. The 
    ```
 
    The admin app is served at `http://localhost:5174`.
-6. On the Menu page, use **Import customer menu** to copy the existing 380 local items and 10 menu categories into the database. Import matches records by their original `legacy_id`, so repeating it updates those imported rows rather than making duplicates. Then explicitly choose **Publish menu** when ready to switch customer ordering to database menu records.
+7. On the Menu page, use **Import customer menu** to copy the existing 380 local items and 10 menu categories into the database. Import matches records by their original `legacy_id`, so repeating it updates those imported rows rather than making duplicates. Then explicitly choose **Publish menu** when ready to switch customer ordering to database menu records.
 
 ## Features
 

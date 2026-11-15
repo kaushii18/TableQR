@@ -1,6 +1,8 @@
 -- Payment state is independent of order workflow state. Existing orders remain
 -- NULL (Not Recorded) until staff verify a payment.
 
+-- Existing rows were authorized by membership in admin_users before roles
+-- existed, so preserve their access while new rows default to least privilege.
 ALTER TABLE public.admin_users
     ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'admin',
     ADD COLUMN IF NOT EXISTS can_confirm_payments BOOLEAN NOT NULL DEFAULT false;
