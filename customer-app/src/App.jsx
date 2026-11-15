@@ -1,12 +1,60 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { categories, categoryMeta, menuItems } from './data/menuData'
-import { createOrder, createServiceRequest, isSupabaseConfigured, supabase } from './lib/supabase'
+import { createOrder, createServiceRequest, getOrderTrackingStatus, isSupabaseConfigured, supabase } from './lib/supabase'
 import StarPortalButton from './components/StarPortalButton'
 import PerspectiveCinematic from './components/PerspectiveCinematic'
 import './App.css'
 
 function getCategoryId(category) {
   return `cat-${category.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+}
+
+const trackingStorageKey = 'starplanet_order_tracking'
+const trackingStatuses = ['received', 'preparing', 'ready', 'served', 'completed']
+
+function loadSavedOrderTracking() {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(trackingStorageKey) || 'null')
+    if (
+      typeof saved?.orderId !== 'string' ||
+      typeof saved?.trackingToken !== 'string' ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(saved.trackingToken)
+    ) return null
+    return { orderId: saved.orderId, trackingToken: saved.trackingToken, status: null }
+  } catch (error) {
+    console.warn('Could not restore customer order tracking from this browser:', error)
+    return null
+  }
+}
+
+function OrderStatusProgress({ status }) {
+  const activeIndex = trackingStatuses.indexOf(status)
+  const cancelled = status === 'cancelled'
+
+  return (
+    <>
+      <p className="tracking-current-status" aria-live="polite">
+        {status ? `Current order status: ${status}` : 'Checking the latest order status…'}
+      </p>
+      {cancelled ? (
+        <p className="tracking-cancelled">This order was cancelled.</p>
+      ) : (
+        <div className="status-progress-track">
+          {trackingStatuses.map((step, index) => (
+            <div className="tracking-stage" key={step}>
+              <div className={`track-step ${index < activeIndex ? 'done' : ''} ${index === activeIndex ? 'active' : ''}`}>
+                <span className="step-dot"></span>
+                <small>{step[0].toUpperCase() + step.slice(1)}</small>
+              </div>
+              {index < trackingStatuses.length - 1 && (
+                <div className={`track-connector ${index < activeIndex ? 'active' : ''}`} />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  )
 }
 
 export default function App() {
@@ -40,6 +88,8 @@ export default function App() {
 
   // Order state
   const [placedOrder, setPlacedOrder] = useState(null)
+  const [customerTracking, setCustomerTracking] = useState(loadSavedOrderTracking)
+  const [trackingError, setTrackingError] = useState('')
   const [orderSubmitting, setOrderSubmitting] = useState(false)
   const [orderError, setOrderError] = useState('')
   const orderSubmittingRef = useRef(false)
@@ -106,6 +156,47 @@ export default function App() {
     })
     return () => { active = false }
   }, [])
+
+  useEffect(() => {
+    const trackingToken = customerTracking?.trackingToken
+    if (!trackingToken || !isSupabaseConfigured || !supabase) return undefined
+
+    let active = true
+    let requestInProgress = false
+
+    // Anonymous table SELECT stays disabled; poll the token-scoped status RPC instead.
+    async function refreshTracking() {
+      if (requestInProgress) return
+      requestInProgress = true
+      try {
+        const status = await getOrderTrackingStatus(trackingToken)
+        if (!active) return
+        if (!status) {
+          setCustomerTracking(current => current?.trackingToken === trackingToken
+            ? { ...current, status: null }
+            : current)
+          setTrackingError('Could not find this order tracking token. Check the original order receipt.')
+          return
+        }
+        setCustomerTracking(current => current?.trackingToken === trackingToken
+          ? { ...current, status }
+          : current)
+        setTrackingError('')
+      } catch (error) {
+        console.error('Could not refresh customer order status:', error)
+        if (active) setTrackingError(error.message || 'Could not refresh order status.')
+      } finally {
+        requestInProgress = false
+      }
+    }
+
+    refreshTracking()
+    const pollId = window.setInterval(refreshTracking, 10_000)
+    return () => {
+      active = false
+      window.clearInterval(pollId)
+    }
+  }, [customerTracking?.trackingToken])
 
   // Filter menu items dynamically
   const filteredMenu = useMemo(() => {
@@ -249,6 +340,23 @@ export default function App() {
         return
       }
 
+      const nextTracking = {
+        orderId: orderData.orderId,
+        trackingToken: result.trackingToken,
+        status: 'received',
+      }
+      setCustomerTracking(nextTracking)
+      setTrackingError('')
+      try {
+        window.localStorage.setItem(trackingStorageKey, JSON.stringify({
+          orderId: nextTracking.orderId,
+          trackingToken: nextTracking.trackingToken,
+        }))
+      } catch (storageError) {
+        console.warn('Could not persist customer order tracking in this browser:', storageError)
+        setTrackingError('The order was saved, but this browser could not save its tracking session. Keep this page open to follow the status.')
+      }
+
       setPlacedOrder(orderData)
       setCart([])
       setSpecialInstructions('')
@@ -279,6 +387,14 @@ export default function App() {
         <div className="toast-pill">
           <span>{toastMessage}</span>
         </div>
+      )}
+
+      {customerTracking && !placedOrder && (
+        <aside className="customer-order-tracking-card" aria-label={`Tracking order ${customerTracking.orderId}`}>
+          <strong>Tracking order #{customerTracking.orderId}</strong>
+          <OrderStatusProgress status={customerTracking.status} />
+          {trackingError && <p className="tracking-error" role="alert">{trackingError}</p>}
+        </aside>
       )}
 
       {/* Clean, Professional Sticky Header */}
@@ -995,22 +1111,8 @@ export default function App() {
               </div>
             </div>
 
-            <div className="status-progress-track">
-              <div className="track-step done">
-                <span className="step-dot"></span>
-                <small>Received</small>
-              </div>
-              <div className="track-connector active"></div>
-              <div className="track-step active">
-                <span className="step-dot"></span>
-                <small>Preparing</small>
-              </div>
-              <div className="track-connector"></div>
-              <div className="track-step">
-                <span className="step-dot"></span>
-                <small>Served</small>
-              </div>
-            </div>
+            <OrderStatusProgress status={customerTracking?.status} />
+            {trackingError && <p className="tracking-error" role="alert">{trackingError}</p>}
 
             <button
               className="primary-checkout-btn"

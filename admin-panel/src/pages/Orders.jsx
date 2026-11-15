@@ -3,7 +3,7 @@ import { EmptyState, Loading, Modal, Notice, PageHeader, StatusBadge } from '../
 import { formatCurrency, formatDate } from '../lib/format'
 import { requireSupabase } from '../lib/supabase'
 
-const statuses = ['all', 'received', 'preparing', 'served', 'completed', 'cancelled']
+const statuses = ['all', 'received', 'preparing', 'ready', 'served', 'completed', 'cancelled']
 
 function getLocalDateKey(date) {
   const year = date.getFullYear()

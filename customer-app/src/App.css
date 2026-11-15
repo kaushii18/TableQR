@@ -2037,3 +2037,67 @@
 .track-connector.active {
   background: var(--gold-primary);
 }
+
+.tracking-stage {
+  display: flex;
+  flex: 1;
+  align-items: center;
+}
+
+.tracking-stage:last-child {
+  flex: 0 0 auto;
+}
+
+.tracking-current-status {
+  margin: 0 10px;
+  color: var(--gold-hover);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.tracking-cancelled,
+.tracking-error {
+  margin: 0 10px 10px;
+  color: #e7a19a;
+  font-size: 12px;
+  text-align: center;
+}
+
+.customer-order-tracking-card {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1000;
+  width: min(440px, calc(100vw - 32px));
+  border: 1px solid var(--border-active);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-float);
+}
+
+.customer-order-tracking-card > strong {
+  display: block;
+  padding: 12px 12px 0;
+  color: var(--text-main);
+  font-size: 12px;
+  text-align: center;
+}
+
+.customer-order-tracking-card .status-progress-track {
+  padding: 10px 8px;
+  margin-bottom: 0;
+}
+
+.customer-order-tracking-card .track-step small {
+  font-size: 9px;
+}
+
+.customer-order-tracking-card .tracking-current-status {
+  font-size: 11px;
+}
+
+.customer-order-tracking-card .tracking-error {
+  margin-top: 0;
+}

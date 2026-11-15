@@ -14,7 +14,8 @@ Separate restaurant operations app for Star Planet Family Restaurant & Bar. The 
 2. Copy `.env.example` to `.env` and set the existing Supabase project URL and **public anon/publishable key**. Set `VITE_CUSTOMER_APP_URL` to the customer app origin (defaults to `http://localhost:5173` for local development).
 3. Apply `../supabase/migrations/20261111_admin_panel.sql` in the Supabase SQL editor if it has not already been applied. Review its policy and schema changes below before running it.
 4. Apply `../supabase/migrations/20261114_payment_management.sql` after the admin-panel migration. The admin-panel migration initially creates `admin_users` with only `user_id` and `created_at`; the payment migration adds `role` and `can_confirm_payments`, which the admin app requires. It promotes existing `admin_users` entries to `admin` and makes future entries default to `staff`. Do not replace this with a frontend fallback: access checks must fail closed if the authorization schema is unavailable.
-5. Create an email/password user in Supabase Auth. To grant that specific account admin access (or restore it if it was not already in `admin_users` when the payment migration ran), use the Supabase SQL editor:
+5. If the live database is missing `admin_users.role` or `admin_users.can_confirm_payments`, apply `../supabase/migrations/20261115_admin_users_authorization_fix.sql` before logging in again. This forward-only migration repairs the schema, preserves existing authorized rows, sets safe defaults, and re-enforces the role-based authorization checks without rewriting historical migration files. See `../supabase/ADMIN_AUTHORIZATION_FIX.md` and `../supabase/admin_authorization_verification.sql` for the remediation and verification steps.
+6. Create an email/password user in Supabase Auth. To grant that specific account admin access (or restore it if it was not already in `admin_users` when the payment migration ran), use the Supabase SQL editor:
 
    ```sql
    INSERT INTO public.admin_users (user_id, role)
@@ -23,7 +24,7 @@ Separate restaurant operations app for Star Planet Family Restaurant & Bar. The 
    ```
 
    Replace the example email with the authorized staff account's email. Only assign `admin` to accounts that should manage the workspace. Do not expose a service-role key in the browser.
-6. Start the customer app in one terminal and the admin app in another:
+7. Start the customer app in one terminal and the admin app in another:
 
    ```powershell
    cd customer-app
@@ -36,7 +37,7 @@ Separate restaurant operations app for Star Planet Family Restaurant & Bar. The 
    ```
 
    The admin app is served at `http://localhost:5174`.
-7. On the Menu page, use **Import customer menu** to copy the existing 380 local items and 10 menu categories into the database. Import matches records by their original `legacy_id`, so repeating it updates those imported rows rather than making duplicates. Then explicitly choose **Publish menu** when ready to switch customer ordering to database menu records.
+8. On the Menu page, use **Import customer menu** to copy the existing 380 local items and 10 menu categories into the database. Import matches records by their original `legacy_id`, so repeating it updates those imported rows rather than making duplicates. Then explicitly choose **Publish menu** when ready to switch customer ordering to database menu records.
 
 ## Features
 

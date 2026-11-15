@@ -14,6 +14,18 @@ export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null
 
+function createTrackingToken() {
+  if (!globalThis.crypto?.getRandomValues) {
+    throw new Error('Secure order tracking is unavailable in this browser.')
+  }
+
+  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16))
+  bytes[6] = (bytes[6] & 0x0f) | 0x40
+  bytes[8] = (bytes[8] & 0x3f) | 0x80
+  const hex = [...bytes].map(byte => byte.toString(16).padStart(2, '0')).join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
 // Cross-tab broadcast channel for local real-time sync when Supabase is not configured yet
 const localChannel = typeof window !== 'undefined' && 'BroadcastChannel' in window
   ? new BroadcastChannel('starplanet_events')
@@ -37,8 +49,10 @@ export async function createOrder(orderData) {
     price: Number(item.price),
     quantity: Number(quantity),
   }))
+  const trackingToken = createTrackingToken()
   const payload = {
     order_number: String(orderData.orderId).trim(),
+    tracking_token: trackingToken,
     table_number: String(orderData.table).trim(),
     customer_name: String(orderData.customerName).trim(),
     customer_phone: String(orderData.customerPhone).trim(),
@@ -76,7 +90,7 @@ export async function createOrder(orderData) {
         message: 'We could not save your order. Please check your connection and try again.',
       }
     }
-    return { success: true }
+    return { success: true, trackingToken }
   } catch (error) {
     console.error('Supabase order request failed:', error, { orderNumber: payload.order_number })
     return {
@@ -85,6 +99,18 @@ export async function createOrder(orderData) {
       message: 'We could not save your order. Please check your connection and try again.',
     }
   }
+}
+
+export async function getOrderTrackingStatus(trackingToken) {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error('Supabase is not configured; order tracking is unavailable.')
+  }
+
+  const { data, error } = await supabase
+    .rpc('get_customer_order_tracking_status', { p_tracking_token: trackingToken })
+    .maybeSingle()
+  if (error) throw error
+  return data?.status ?? null
 }
 
 /**
@@ -142,6 +168,7 @@ export async function getLiveOrders() {
       .order('created_at', { ascending: false })
     if (error) throw error
     return data.map(o => ({
+      id: o.id,
       orderId: o.order_number,
       table: o.table_number,
       customerName: o.customer_name,
@@ -163,9 +190,9 @@ export async function getLiveOrders() {
 }
 
 /**
- * Update order status (received -> preparing -> served -> completed)
+ * Update order status (received -> preparing -> ready -> served -> completed)
  */
-export async function updateOrderStatus(orderId, newStatus) {
+export async function updateOrderStatus(orderRowId, newStatus) {
   if (!isSupabaseConfigured || !supabase) {
     throw new Error('Supabase is not configured; order status was not updated.')
   }
@@ -174,14 +201,14 @@ export async function updateOrderStatus(orderId, newStatus) {
     const { data, error } = await supabase
       .from('orders')
       .update({ status: newStatus })
-      .eq('order_number', orderId)
-      .select('order_number')
+      .eq('id', orderRowId)
+      .select('id')
       .maybeSingle()
     if (error) throw error
-    if (!data) throw new Error(`Order ${orderId} was not found or could not be updated.`)
+    if (!data) throw new Error(`Order ${orderRowId} was not found or could not be updated.`)
     return { success: true, data }
   } catch (error) {
-    console.error('Supabase order status update failed:', error, { orderNumber: orderId, newStatus })
+    console.error('Supabase order status update failed:', error, { orderId: orderRowId, newStatus })
     throw error
   }
 }

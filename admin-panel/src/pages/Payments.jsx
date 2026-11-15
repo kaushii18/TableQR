@@ -10,12 +10,6 @@ function paymentStatus(order) {
   return 'not_recorded'
 }
 
-function orderStatusLabel(status) {
-  if (status === 'received') return 'pending'
-  if (status === 'served') return 'ready'
-  return status || 'unknown'
-}
-
 function paymentMethodLabel(method) {
   if (method === 'UPI') return 'UPI Online (legacy)'
   if (method === 'Counter') return 'Pay at Counter (legacy)'
@@ -271,7 +265,7 @@ export default function Payments() {
                       <td><strong>{amount === null ? '—' : formatCurrency(amount)}</strong></td>
                       <td>{paymentMethodLabel(order.payment_method)}</td>
                       <td><StatusBadge status={status} /></td>
-                      <td><StatusBadge status={orderStatusLabel(order.status)} /></td>
+                      <td><StatusBadge status={order.status} /></td>
                       <td>{order.payment_confirmed_at ? formatDate(order.payment_confirmed_at) : '—'}</td>
                       <td title={order.payment_confirmed_by ? `User ID ${order.payment_confirmed_by}` : undefined}>
                         {order.payment_confirmed_by ? `Staff · ${order.payment_confirmed_by.slice(0, 8)}` : '—'}
