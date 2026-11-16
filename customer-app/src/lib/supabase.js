@@ -14,6 +14,16 @@ export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null
 
+function getLocalStorage() {
+  if (typeof window === 'undefined') return null
+  try {
+    return window.localStorage
+  } catch (error) {
+    console.warn('LocalStorage is unavailable in this environment:', error)
+    return null
+  }
+}
+
 function createTrackingToken() {
   if (!globalThis.crypto?.getRandomValues) {
     throw new Error('Secure order tracking is unavailable in this browser.')
@@ -125,9 +135,12 @@ export async function createServiceRequest(tableNumber, serviceType) {
     status: 'pending'
   }
 
+  const storage = getLocalStorage()
   try {
-    const existing = JSON.parse(localStorage.getItem('starplanet_service_requests') || '[]')
-    localStorage.setItem('starplanet_service_requests', JSON.stringify([reqObj, ...existing]))
+    if (storage) {
+      const existing = JSON.parse(storage.getItem('starplanet_service_requests') || '[]')
+      storage.setItem('starplanet_service_requests', JSON.stringify([reqObj, ...existing]))
+    }
 
     if (localChannel) {
       localChannel.postMessage({ type: 'SERVICE_REQUEST', request: reqObj })

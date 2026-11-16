@@ -12,7 +12,13 @@ function getCategoryId(category) {
 const trackingStorageKey = 'starplanet_order_tracking'
 const trackingStatuses = ['received', 'preparing', 'ready', 'served', 'completed']
 
+function getBrowserSearch() {
+  return typeof window === 'undefined' ? '' : window.location?.search || ''
+}
+
 function loadSavedOrderTracking() {
+  if (typeof window === 'undefined' || !window.localStorage) return null
+
   try {
     const saved = JSON.parse(window.localStorage.getItem(trackingStorageKey) || 'null')
     if (
@@ -59,7 +65,7 @@ function OrderStatusProgress({ status }) {
 
 export default function App() {
   // Table detection from URL ?table=...
-  const urlTable = new URLSearchParams(window.location.search).get('table') || ''
+  const urlTable = new URLSearchParams(getBrowserSearch()).get('table') || ''
   const [tableNumber, setTableNumber] = useState(urlTable)
   const [showLanding, setShowLanding] = useState(true)
   const [tableModalOpen, setTableModalOpen] = useState(false)
@@ -348,10 +354,12 @@ export default function App() {
       setCustomerTracking(nextTracking)
       setTrackingError('')
       try {
-        window.localStorage.setItem(trackingStorageKey, JSON.stringify({
-          orderId: nextTracking.orderId,
-          trackingToken: nextTracking.trackingToken,
-        }))
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.setItem(trackingStorageKey, JSON.stringify({
+            orderId: nextTracking.orderId,
+            trackingToken: nextTracking.trackingToken,
+          }))
+        }
       } catch (storageError) {
         console.warn('Could not persist customer order tracking in this browser:', storageError)
         setTrackingError('The order was saved, but this browser could not save its tracking session. Keep this page open to follow the status.')
